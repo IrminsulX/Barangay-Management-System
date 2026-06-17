@@ -267,11 +267,20 @@ def api_residents():
 
     data = request.get_json()
     rid = query(
-        "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, household_id, voter_status) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, email, household_id, voter_status) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [data['full_name'], data['birthdate'], data['sex'], data['civil_status'],
-         data.get('contact_number', ''), data.get('household_id'), int(data.get('voter_status', 0))]
+         data.get('contact_number', ''), data.get('email', ''), data.get('household_id'), int(data.get('voter_status', 0))]
     )
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if username and password:
+        existing = query("SELECT id FROM users WHERE username = ?", [username], one=True)
+        if not existing:
+            query(
+                "INSERT INTO users (username, password_hash, role, resident_id) VALUES (?, ?, 'resident', ?)",
+                [username, generate_password_hash(password), rid]
+            )
     return jsonify({'success': True, 'id': rid}), 201
 
 @app.route('/api/residents/<int:rid>', methods=['GET', 'PUT', 'DELETE'])
@@ -288,9 +297,9 @@ def api_resident(rid):
     if request.method == 'PUT':
         data = request.get_json()
         query(
-            "UPDATE residents SET full_name=?, birthdate=?, sex=?, civil_status=?, contact_number=?, household_id=?, voter_status=? WHERE id=?",
+            "UPDATE residents SET full_name=?, birthdate=?, sex=?, civil_status=?, contact_number=?, email=?, household_id=?, voter_status=? WHERE id=?",
             [data['full_name'], data['birthdate'], data['sex'], data['civil_status'],
-             data.get('contact_number', ''), data.get('household_id'), int(data.get('voter_status', 0)), rid]
+             data.get('contact_number', ''), data.get('email', ''), data.get('household_id'), int(data.get('voter_status', 0)), rid]
         )
         return jsonify({'success': True})
 
@@ -323,6 +332,8 @@ def api_households():
         "INSERT INTO households (household_code, head_resident_id, address) VALUES (?, ?, ?)",
         [data['household_code'], data.get('head_resident_id'), data['address']]
     )
+    if data.get('head_resident_id'):
+        query("UPDATE residents SET household_id = ? WHERE id = ?", [hid, data['head_resident_id']])
     return jsonify({'success': True, 'id': hid}), 201
 
 @app.route('/api/households/<int:hid>', methods=['GET', 'PUT', 'DELETE'])
@@ -366,7 +377,8 @@ def api_my_household():
     if not household_id:
         return jsonify({'household': None})
     h = query("""
-        SELECT h.*, r.full_name as head_name
+        SELECT h.*, r.full_name as head_name,
+            (SELECT COUNT(*) FROM residents WHERE household_id = h.id) as member_count
         FROM households h LEFT JOIN residents r ON h.head_resident_id = r.id WHERE h.id = ?
     """, [household_id], one=True)
     if not h:
@@ -387,10 +399,19 @@ def api_my_household_add_member():
         return jsonify({'error': 'You must belong to a household first'}), 400
     data = request.get_json()
     new_id = query(
-        "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, household_id, voter_status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, email, household_id, voter_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         [data['full_name'], data['birthdate'], data['sex'], data['civil_status'],
-         data.get('contact_number', ''), resident['household_id'], int(data.get('voter_status', 0))]
+         data.get('contact_number', ''), data.get('email', ''), resident['household_id'], int(data.get('voter_status', 0))]
     )
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if username and password:
+        existing = query("SELECT id FROM users WHERE username = ?", [username], one=True)
+        if not existing:
+            query(
+                "INSERT INTO users (username, password_hash, role, resident_id) VALUES (?, ?, 'resident', ?)",
+                [username, generate_password_hash(password), new_id]
+            )
     return jsonify({'success': True, 'id': new_id}), 201
 
 # ── Document Requests API ─────────────────────────────────────────
@@ -401,9 +422,10 @@ def api_requests():
     if request.method == 'GET':
         resident_id = request.args.get('resident_id', '')
         sql = """
-            SELECT d.*, r.full_name as resident_name, r.address
+            SELECT d.*, r.full_name as resident_name, h.address
             FROM document_requests d
             JOIN residents r ON d.resident_id = r.id
+            LEFT JOIN households h ON r.household_id = h.id
             WHERE 1=1
         """
         params = []
@@ -538,15 +560,28 @@ def print_request(rid):
 @admin_required
 def print_blotter(bid):
     b = query("""
-        SELECT b.*, r.full_name as complainant_name, r.address as complainant_address,
+        SELECT b.*, r.full_name as complainant_name, h.address as complainant_address,
                r.contact_number as complainant_contact
         FROM blotter b
         JOIN residents r ON b.complainant_id = r.id
+        LEFT JOIN households h ON r.household_id = h.id
         WHERE b.id = ?
     """, [bid], one=True)
     if not b:
         return jsonify({'error': 'Not found'}), 404
     return render_template('shared/blotter_report.html', data=dict_row(b))
+
+# ── Template Filters ─────────────────────────────────────────────
+
+@app.template_filter('fmt_date')
+def fmt_date(dt_str):
+    """Convert ISO datetime string to MM/DD/YYYY"""
+    if not dt_str:
+        return ''
+    parts = str(dt_str).split(' ')[0].split('-')
+    if len(parts) == 3:
+        return f"{parts[1]}/{parts[2]}/{parts[0]}"
+    return str(dt_str)
 
 # ── Run ────────────────────────────────────────────────────────────
 

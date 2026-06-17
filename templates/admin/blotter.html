@@ -142,17 +142,18 @@
         <td>${formatDate(b.date_filed)}</td>
         <td>${statusBadge(b.status)}</td>
         <td class="actions">
-          <button class="btn btn-sm btn-primary" onclick="openBlotterModal(${b.id},'${b.status}','${(b.resolution_notes||'').replace(/'/g,"\\'")}')">Update</button>
+          <button class="btn btn-sm btn-primary update-blotter-btn" data-id="${b.id}" data-status="${b.status}" data-notes="${(b.resolution_notes||'').replace(/"/g,'&quot;').replace(/\n/g,'\\n')}">Update</button>
           <button class="btn btn-sm btn-info" onclick="printBlotter(${b.id})">Print</button>
         </td>
       </tr>`).join('');
-    }
-
-    function openBlotterModal(id, status, notes) {
-      document.getElementById('editBlotterId').value = id;
-      document.getElementById('blotterStatus').value = status;
-      document.getElementById('blotterNotes').value = notes || '';
-      openModal('statusModal');
+      document.querySelectorAll('.update-blotter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.getElementById('editBlotterId').value = this.dataset.id;
+          document.getElementById('blotterStatus').value = this.dataset.status;
+          document.getElementById('blotterNotes').value = this.dataset.notes;
+          openModal('statusModal');
+        });
+      });
     }
 
     async function updateBlotter() {

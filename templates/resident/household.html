@@ -90,7 +90,23 @@
           <input type="text" id="mContact" placeholder="09XX-XXX-XXXX">
         </div>
         <div class="form-group">
-          <label><input type="checkbox" id="mVoter" value="1"> Registered Voter</label>
+          <label>Email (optional)</label>
+          <input type="email" id="mEmail" placeholder="member@example.com">
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--text-light);">ACCOUNT LOGIN CREDENTIALS</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="mUsername" placeholder="For portal login">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="mPassword" placeholder="Min. 6 characters">
+          </div>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;padding-top:6px;">
+          <input type="checkbox" id="mVoter" value="1" style="margin:0 8px 0 0;width:16px;height:16px;">
+          <label for="mVoter" style="margin:0;font-weight:400;cursor:pointer;">Registered Voter</label>
         </div>
       </div>
       <div class="modal-footer">
@@ -203,6 +219,9 @@
         sex: document.getElementById('mSex').value,
         civil_status: document.getElementById('mCivilStatus').value,
         contact_number: document.getElementById('mContact').value,
+        email: document.getElementById('mEmail').value,
+        username: document.getElementById('mUsername').value,
+        password: document.getElementById('mPassword').value,
         voter_status: document.getElementById('mVoter').checked ? 1 : 0
       };
       if (!data.full_name || !data.birthdate) {
@@ -218,6 +237,9 @@
         document.getElementById('mSex').value = 'Male';
         document.getElementById('mCivilStatus').value = 'Single';
         document.getElementById('mContact').value = '';
+        document.getElementById('mEmail').value = '';
+        document.getElementById('mUsername').value = '';
+        document.getElementById('mPassword').value = '';
         document.getElementById('mVoter').checked = false;
         loadHousehold();
       }

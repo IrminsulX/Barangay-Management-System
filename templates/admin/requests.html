@@ -144,17 +144,18 @@
         <td>${formatDate(r.date_requested)}</td>
         <td>${statusBadge(r.status)}</td>
         <td class="actions">
-          <button class="btn btn-sm btn-primary" onclick="openStatusModal(${r.id},'${r.status}','${(r.notes||'').replace(/'/g,"\\'")}')">Update</button>
+          <button class="btn btn-sm btn-primary update-req-btn" data-id="${r.id}" data-status="${r.status}" data-notes="${(r.notes||'').replace(/"/g,'&quot;').replace(/\n/g,'\\n')}">Update</button>
           <button class="btn btn-sm btn-info" onclick="printRequest(${r.id})">Print</button>
         </td>
       </tr>`).join('');
-    }
-
-    function openStatusModal(id, status, notes) {
-      document.getElementById('statusRequestId').value = id;
-      document.getElementById('statusSelect').value = status;
-      document.getElementById('statusNotes').value = notes || '';
-      openModal('statusModal');
+      document.querySelectorAll('.update-req-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          document.getElementById('statusRequestId').value = this.dataset.id;
+          document.getElementById('statusSelect').value = this.dataset.status;
+          document.getElementById('statusNotes').value = this.dataset.notes;
+          openModal('statusModal');
+        });
+      });
     }
 
     async function updateRequestStatus() {

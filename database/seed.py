@@ -58,9 +58,9 @@ def seed():
 
     for r in residents_data:
         cur.execute(
-            "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, household_id, voter_status) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            r
+            "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, email, household_id, voter_status) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (r[0], r[1], r[2], r[3], r[4], '', r[5], r[6])
         )
 
     # Set household heads

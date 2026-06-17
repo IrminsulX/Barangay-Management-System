@@ -120,13 +120,29 @@
           <label>Contact Number</label>
           <input type="text" id="rContact" placeholder="09XX-XXX-XXXX">
         </div>
+        <div class="form-group">
+          <label>Email (optional)</label>
+          <input type="email" id="rEmail" placeholder="resident@example.com">
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--text-light);">ACCOUNT LOGIN CREDENTIALS</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="rUsername" placeholder="For portal login">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="rPassword" placeholder="Min. 6 characters">
+          </div>
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Household</label>
             <select id="rHousehold"><option value="">— None —</option></select>
           </div>
-          <div class="form-group">
-            <label><input type="checkbox" id="rVoter" value="1"> Registered Voter</label>
+          <div class="form-group" style="display:flex;align-items:center;padding-top:26px;">
+            <input type="checkbox" id="rVoter" value="1" style="margin:0 8px 0 0;width:16px;height:16px;">
+            <label for="rVoter" style="margin:0;font-weight:400;cursor:pointer;">Registered Voter</label>
           </div>
         </div>
       </div>
@@ -204,6 +220,9 @@
       document.getElementById('rSex').value = 'Male';
       document.getElementById('rCivilStatus').value = 'Single';
       document.getElementById('rContact').value = '';
+      document.getElementById('rEmail').value = '';
+      document.getElementById('rUsername').value = '';
+      document.getElementById('rPassword').value = '';
       document.getElementById('rVoter').checked = false;
       openModal('residentModal');
     }
@@ -218,6 +237,9 @@
       document.getElementById('rSex').value = r.sex;
       document.getElementById('rCivilStatus').value = r.civil_status;
       document.getElementById('rContact').value = r.contact_number || '';
+      document.getElementById('rEmail').value = r.email || '';
+      document.getElementById('rUsername').value = '';
+      document.getElementById('rPassword').value = '';
       document.getElementById('rHousehold').value = r.household_id || '';
       document.getElementById('rVoter').checked = r.voter_status == 1;
       openModal('residentModal');
@@ -231,6 +253,9 @@
         sex: document.getElementById('rSex').value,
         civil_status: document.getElementById('rCivilStatus').value,
         contact_number: document.getElementById('rContact').value,
+        email: document.getElementById('rEmail').value,
+        username: document.getElementById('rUsername').value,
+        password: document.getElementById('rPassword').value,
         household_id: document.getElementById('rHousehold').value || null,
         voter_status: document.getElementById('rVoter').checked ? 1 : 0
       };

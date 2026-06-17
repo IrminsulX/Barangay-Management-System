@@ -89,13 +89,66 @@
             <input type="text" id="hCode" placeholder="e.g. BRGY-006" required>
           </div>
           <div class="form-group">
-            <label>Head of Household</label>
-            <select id="hHead"><option value="">— None —</option></select>
+            <label>Address</label>
+            <input type="text" id="hAddress" required>
           </div>
         </div>
-        <div class="form-group">
-          <label>Address</label>
-          <input type="text" id="hAddress" required>
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--text-light);">HEAD OF HOUSEHOLD DETAILS</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="hHeadName" placeholder="Full name of household head" required>
+          </div>
+          <div class="form-group">
+            <label>Birthdate</label>
+            <input type="date" id="hHeadBirthdate" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sex</label>
+            <select id="hHeadSex">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Civil Status</label>
+            <select id="hHeadCivilStatus">
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Separated">Separated</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contact Number</label>
+            <input type="text" id="hHeadContact" placeholder="09XX-XXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label>Email (optional)</label>
+            <input type="email" id="hHeadEmail" placeholder="head@example.com">
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--text-light);">ACCOUNT LOGIN CREDENTIALS</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="hHeadUsername" placeholder="For portal login">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="hHeadPassword" placeholder="Min. 6 characters">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="display:flex;align-items:center;padding-top:6px;">
+            <input type="checkbox" id="hHeadVoter" value="1" style="margin:0 8px 0 0;width:16px;height:16px;">
+            <label for="hHeadVoter" style="margin:0;font-weight:400;cursor:pointer;">Registered Voter</label>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -120,7 +173,6 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       loadSessionHH();
-      loadResidentSelect();
       loadHouseholds();
     });
 
@@ -129,12 +181,6 @@
       if (!s || !s.logged_in) { window.location.href = '/login'; return; }
       document.getElementById('sidebarName').textContent = s.username;
       document.getElementById('sidebarRole').textContent = s.role;
-    }
-
-    async function loadResidentSelect() {
-      const residents = await api('/api/residents') || [];
-      document.getElementById('hHead').innerHTML = '<option value="">— None —</option>' +
-        residents.map(r => `<option value="${r.id}">${r.full_name}</option>`).join('');
     }
 
     async function loadHouseholds() {
@@ -162,8 +208,16 @@
       document.getElementById('modalTitle').textContent = 'Add Household';
       document.getElementById('editId').value = '';
       document.getElementById('hCode').value = '';
-      document.getElementById('hHead').value = '';
       document.getElementById('hAddress').value = '';
+      document.getElementById('hHeadName').value = '';
+      document.getElementById('hHeadBirthdate').value = '';
+      document.getElementById('hHeadSex').value = 'Male';
+      document.getElementById('hHeadCivilStatus').value = 'Single';
+      document.getElementById('hHeadContact').value = '';
+      document.getElementById('hHeadEmail').value = '';
+      document.getElementById('hHeadUsername').value = '';
+      document.getElementById('hHeadPassword').value = '';
+      document.getElementById('hHeadVoter').checked = false;
       openModal('householdModal');
     }
 
@@ -173,27 +227,85 @@
       document.getElementById('modalTitle').textContent = 'Edit Household';
       document.getElementById('editId').value = h.id;
       document.getElementById('hCode').value = h.household_code;
-      document.getElementById('hHead').value = h.head_resident_id || '';
       document.getElementById('hAddress').value = h.address;
+      if (h.head_resident_id) {
+        const head = await api(`/api/residents/${h.head_resident_id}`);
+        if (head) {
+          document.getElementById('hHeadName').value = head.full_name;
+          document.getElementById('hHeadBirthdate').value = head.birthdate;
+          document.getElementById('hHeadSex').value = head.sex;
+          document.getElementById('hHeadCivilStatus').value = head.civil_status;
+          document.getElementById('hHeadContact').value = head.contact_number || '';
+          document.getElementById('hHeadEmail').value = head.email || '';
+          document.getElementById('hHeadUsername').value = '';
+          document.getElementById('hHeadPassword').value = '';
+          document.getElementById('hHeadVoter').checked = head.voter_status == 1;
+        }
+      } else {
+        document.getElementById('hHeadName').value = '';
+        document.getElementById('hHeadBirthdate').value = '';
+        document.getElementById('hHeadSex').value = 'Male';
+        document.getElementById('hHeadCivilStatus').value = 'Single';
+        document.getElementById('hHeadContact').value = '';
+        document.getElementById('hHeadEmail').value = '';
+        document.getElementById('hHeadUsername').value = '';
+        document.getElementById('hHeadPassword').value = '';
+        document.getElementById('hHeadVoter').checked = false;
+      }
       openModal('householdModal');
     }
 
     async function saveHousehold() {
       const id = document.getElementById('editId').value;
-      const data = {
-        household_code: document.getElementById('hCode').value,
-        head_resident_id: document.getElementById('hHead').value || null,
-        address: document.getElementById('hAddress').value
-      };
-      if (!data.household_code || !data.address) {
-        showToast('Code and address are required', 'error');
+      const code = document.getElementById('hCode').value;
+      const address = document.getElementById('hAddress').value;
+      const headName = document.getElementById('hHeadName').value;
+      const headBirthdate = document.getElementById('hHeadBirthdate').value;
+      if (!code || !address || !headName || !headBirthdate) {
+        showToast('Code, address, head name and birthdate are required', 'error');
         return;
       }
       if (id) {
-        await api(`/api/households/${id}`, { method: 'PUT', body: data });
+        const headResidentId = (await api(`/api/households/${id}`, { method: 'GET' }))?.head_resident_id;
+        if (headResidentId) {
+          await api(`/api/residents/${headResidentId}`, {
+            method: 'PUT',
+            body: {
+              full_name: headName,
+              birthdate: headBirthdate,
+              sex: document.getElementById('hHeadSex').value,
+              civil_status: document.getElementById('hHeadCivilStatus').value,
+              contact_number: document.getElementById('hHeadContact').value,
+              email: document.getElementById('hHeadEmail').value,
+              voter_status: document.getElementById('hHeadVoter').checked ? 1 : 0
+            }
+          });
+        }
+        await api(`/api/households/${id}`, {
+          method: 'PUT',
+          body: { household_code: code, address }
+        });
         showToast('Household updated');
       } else {
-        await api('/api/households', { method: 'POST', body: data });
+        const residentRes = await api('/api/residents', {
+          method: 'POST',
+          body: {
+            full_name: headName,
+            birthdate: headBirthdate,
+            sex: document.getElementById('hHeadSex').value,
+            civil_status: document.getElementById('hHeadCivilStatus').value,
+            contact_number: document.getElementById('hHeadContact').value,
+            email: document.getElementById('hHeadEmail').value,
+            username: document.getElementById('hHeadUsername').value,
+            password: document.getElementById('hHeadPassword').value,
+            voter_status: document.getElementById('hHeadVoter').checked ? 1 : 0
+          }
+        });
+        if (!residentRes) return;
+        await api('/api/households', {
+          method: 'POST',
+          body: { household_code: code, head_resident_id: residentRes.id, address }
+        });
         showToast('Household added');
       }
       closeModal('householdModal');

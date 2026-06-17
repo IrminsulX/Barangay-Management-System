@@ -38,7 +38,7 @@
 
       <p>This {{ data.document_type }} is issued upon the request of the above-named person for <strong>{{ data.purpose or 'general purposes' }}</strong>.</p>
 
-      <p>Issued this {{ data.date_released or data.date_requested }} at Barangay 779, City of Manila.</p>
+      <p>Issued this {{ (data.date_released or data.date_requested)|fmt_date }} at Barangay 779, City of Manila.</p>
     </div>
 
     <div class="cert-footer">
@@ -50,7 +50,7 @@
 
     <hr>
     <p style="font-size:11px;color:#888;text-align:center;">
-      Document No: {{ data.id }} | Issued: {{ data.date_released or 'Pending' }}
+      Document No: {{ data.id }} | Issued: {{ (data.date_released or 'Pending')|fmt_date }}
     </p>
   </div>
 </body>

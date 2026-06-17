@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS residents (
     sex TEXT NOT NULL CHECK(sex IN ('Male', 'Female')),
     civil_status TEXT NOT NULL CHECK(civil_status IN ('Single', 'Married', 'Widowed', 'Divorced', 'Separated')),
     contact_number TEXT,
+    email TEXT,
     household_id INTEGER,
     voter_status INTEGER DEFAULT 0 CHECK(voter_status IN (0, 1)),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
