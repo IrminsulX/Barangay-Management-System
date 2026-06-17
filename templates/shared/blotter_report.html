@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Blotter Report — Case #{{ data.id }}</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    body { background: #f0f2f5; padding: 40px 20px; }
+    .print-template { max-width: 800px; margin: 0 auto; background: white; padding: 50px 60px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
+    .field { margin-bottom: 12px; }
+    .field-label { font-weight: 600; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field-value { font-size: 14px; margin-top: 2px; }
+    .status-box { display: inline-block; padding: 4px 16px; border-radius: 4px; font-weight: 600; font-size: 13px; }
+    @media print { body { padding: 0; background: white; } .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="no-print" style="text-align:center;margin-bottom:20px;">
+    <button onclick="window.print()" class="btn btn-primary">Print Report</button>
+    <button onclick="window.close()" class="btn btn-outline">Close</button>
+  </div>
+  <div class="print-template">
+    <div class="brgy-header">
+      <img src="/static/img/logo.png" alt="Logo" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin:0 auto 8px;display:block;">
+      <h2>Republic of the Philippines</h2>
+      <h2>Barangay 779</h2>
+      <p>City of Manila</p>
+    </div>
+
+    <h1>Blotter Report</h1>
+    <p style="text-align:center;color:#666;">Case No. {{ data.id }} | Filed: {{ data.date_filed }}</p>
+
+    <hr>
+
+    <div class="field">
+      <div class="field-label">Complainant</div>
+      <div class="field-value">{{ data.complainant_name }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Address</div>
+      <div class="field-value">{{ data.complainant_address }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Contact</div>
+      <div class="field-value">{{ data.complainant_contact }}</div>
+    </div>
+
+    <hr>
+
+    <div class="field">
+      <div class="field-label">Respondent</div>
+      <div class="field-value">{{ data.respondent_name }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Incident Date/Time</div>
+      <div class="field-value">{{ data.incident_date or 'N/A' }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Incident Location</div>
+      <div class="field-value">{{ data.incident_location or 'N/A' }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Incident Details</div>
+      <div class="field-value">{{ data.incident_details }}</div>
+    </div>
+
+    <hr>
+
+    <div class="field">
+      <div class="field-label">Status</div>
+      <div class="field-value"><span class="status-box">{{ data.status }}</span></div>
+    </div>
+    <div class="field">
+      <div class="field-label">Resolution Notes</div>
+      <div class="field-value">{{ data.resolution_notes or '—' }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Date Resolved</div>
+      <div class="field-value">{{ data.date_resolved or '—' }}</div>
+    </div>
+
+    <div class="cert-footer">
+      <div class="signature">
+        <div class="line"></div>
+        <p><strong>PUNONG BARANGAY</strong></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

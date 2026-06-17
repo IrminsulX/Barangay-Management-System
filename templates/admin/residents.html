@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Residents — Barangay Management System</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="sidebar-backdrop"></div>
+  <button class="mobile-hamburger" id="hamburger">&#9776;</button>
+
+  <div class="sidebar">
+    <div class="sidebar-header" style="gap:0;flex-direction:column;text-align:center;">
+      <img src="/static/img/logo.png" alt="Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid var(--secondary);">
+      <div>
+        <h2>Barangay 779</h2>
+        <small>Management System</small>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="/admin/dashboard"><span class="icon">&#9679;</span> Dashboard</a>
+      <a href="/admin/residents" class="active"><span class="icon">&#128101;</span> Residents</a>
+      <a href="/admin/households"><span class="icon">&#127968;</span> Households</a>
+      <div class="nav-section">Services</div>
+      <a href="/admin/requests"><span class="icon">&#128203;</span> Requests</a>
+      <a href="/admin/blotter"><span class="icon">&#128220;</span> Blotter</a>
+      <a href="/admin/announcements"><span class="icon">&#128240;</span> Announcements</a>
+      <div class="nav-section">Portal</div>
+      <a href="/resident/home"><span class="icon">&#127760;</span> Resident Portal</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="name" id="sidebarName">User</div>
+        <div class="role" id="sidebarRole">admin</div>
+      </div>
+      <button class="logout-btn" title="Logout">&#128682;</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Resident Records</h1>
+        <div class="breadcrumb">Admin / <span>Residents</span></div>
+      </div>
+      <button class="btn btn-primary" onclick="openResidentModal()">+ Add Resident</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>All Residents</h3>
+        <div class="card-actions">
+          <input type="text" class="search-input" id="searchInput" placeholder="Search residents..." oninput="loadResidents()">
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Full Name</th>
+              <th>Birthdate</th>
+              <th>Age</th>
+              <th>Sex</th>
+              <th>Civil Status</th>
+              <th>Contact</th>
+              <th>Household</th>
+              <th>Voter</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="residentsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Resident Modal -->
+  <div class="modal-overlay" id="residentModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="residentModalTitle">Add Resident</h3>
+        <button class="modal-close" onclick="closeModal('residentModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editResidentId">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="rFullName" required>
+          </div>
+          <div class="form-group">
+            <label>Birthdate</label>
+            <input type="date" id="rBirthdate" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sex</label>
+            <select id="rSex">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Civil Status</label>
+            <select id="rCivilStatus">
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Separated">Separated</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Contact Number</label>
+          <input type="text" id="rContact" placeholder="09XX-XXX-XXXX">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Household</label>
+            <select id="rHousehold"><option value="">— None —</option></select>
+          </div>
+          <div class="form-group">
+            <label><input type="checkbox" id="rVoter" value="1"> Registered Voter</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('residentModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveResident()">Save Resident</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Resident Details</h3>
+        <button class="modal-close" onclick="closeModal('detailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="detailBody"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      loadResidentSession();
+      loadHouseholdSelect();
+      loadResidents();
+    });
+
+    async function loadResidentSession() {
+      const s = await api('/api/session');
+      if (!s || !s.logged_in) { window.location.href = '/login'; return; }
+      document.getElementById('sidebarName').textContent = s.username;
+      document.getElementById('sidebarRole').textContent = s.role;
+    }
+
+    async function loadHouseholdSelect() {
+      const hh = await api('/api/households') || [];
+      const sel = document.getElementById('rHousehold');
+      sel.innerHTML = '<option value="">— None —</option>' + hh.map(h =>
+        `<option value="${h.id}">${h.household_code} — ${h.address}</option>`
+      ).join('');
+    }
+
+    async function loadResidents() {
+      const search = document.getElementById('searchInput').value;
+      const data = await api(`/api/residents?search=${encodeURIComponent(search)}`) || [];
+      const tbody = document.getElementById('residentsBody');
+      if (!data.length) {
+        tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><p>No residents found</p></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.map(r => `<tr>
+        <td><strong>${r.full_name}</strong></td>
+        <td>${formatDate(r.birthdate)}</td>
+        <td>${r.age}</td>
+        <td>${r.sex}</td>
+        <td>${r.civil_status}</td>
+        <td>${r.contact_number || '—'}</td>
+        <td>${r.household_code || '—'}</td>
+        <td>${r.voter_status ? '&#10004;' : '—'}</td>
+        <td class="actions">
+          <button class="btn btn-sm btn-info" onclick="viewResident(${r.id})">View</button>
+          <button class="btn btn-sm btn-warning" onclick="editResident(${r.id})">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteResident(${r.id})">Del</button>
+        </td>
+      </tr>`).join('');
+    }
+
+    function openResidentModal() {
+      document.getElementById('residentModalTitle').textContent = 'Add Resident';
+      document.getElementById('editResidentId').value = '';
+      document.getElementById('rFullName').value = '';
+      document.getElementById('rBirthdate').value = '';
+      document.getElementById('rSex').value = 'Male';
+      document.getElementById('rCivilStatus').value = 'Single';
+      document.getElementById('rContact').value = '';
+      document.getElementById('rVoter').checked = false;
+      openModal('residentModal');
+    }
+
+    async function editResident(id) {
+      const r = await api(`/api/residents/${id}`);
+      if (!r) return;
+      document.getElementById('residentModalTitle').textContent = 'Edit Resident';
+      document.getElementById('editResidentId').value = r.id;
+      document.getElementById('rFullName').value = r.full_name;
+      document.getElementById('rBirthdate').value = r.birthdate;
+      document.getElementById('rSex').value = r.sex;
+      document.getElementById('rCivilStatus').value = r.civil_status;
+      document.getElementById('rContact').value = r.contact_number || '';
+      document.getElementById('rHousehold').value = r.household_id || '';
+      document.getElementById('rVoter').checked = r.voter_status == 1;
+      openModal('residentModal');
+    }
+
+    async function saveResident() {
+      const id = document.getElementById('editResidentId').value;
+      const data = {
+        full_name: document.getElementById('rFullName').value,
+        birthdate: document.getElementById('rBirthdate').value,
+        sex: document.getElementById('rSex').value,
+        civil_status: document.getElementById('rCivilStatus').value,
+        contact_number: document.getElementById('rContact').value,
+        household_id: document.getElementById('rHousehold').value || null,
+        voter_status: document.getElementById('rVoter').checked ? 1 : 0
+      };
+      if (!data.full_name || !data.birthdate) {
+        showToast('Full name and birthdate are required', 'error');
+        return;
+      }
+      if (id) {
+        await api(`/api/residents/${id}`, { method: 'PUT', body: data });
+        showToast('Resident updated successfully');
+      } else {
+        await api('/api/residents', { method: 'POST', body: data });
+        showToast('Resident added successfully');
+      }
+      closeModal('residentModal');
+      loadResidents();
+    }
+
+    async function deleteResident(id) {
+      if (!confirm('Delete this resident record?')) return;
+      await api(`/api/residents/${id}`, { method: 'DELETE' });
+      showToast('Resident deleted');
+      loadResidents();
+    }
+
+    async function viewResident(id) {
+      const r = await api(`/api/residents/${id}`);
+      if (!r) return;
+      document.getElementById('detailBody').innerHTML = `
+        <div class="form-row" style="margin-bottom:16px;">
+          <div><strong>Full Name:</strong><br>${r.full_name}</div>
+          <div><strong>Age:</strong><br>${r.age} yrs old</div>
+        </div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div><strong>Birthdate:</strong><br>${formatDate(r.birthdate)}</div>
+          <div><strong>Sex:</strong><br>${r.sex}</div>
+        </div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div><strong>Civil Status:</strong><br>${r.civil_status}</div>
+          <div><strong>Contact:</strong><br>${r.contact_number || '—'}</div>
+        </div>
+        <div class="form-row" style="margin-bottom:16px;">
+          <div><strong>Household:</strong><br>${r.household_code || '—'}</div>
+          <div><strong>Voter Status:</strong><br>${r.voter_status ? 'Registered' : 'Not Registered'}</div>
+        </div>
+      `;
+      openModal('detailModal');
+    }
+  </script>
+</body>
+</html>

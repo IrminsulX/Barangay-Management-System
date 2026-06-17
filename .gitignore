@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+barangay.db
+flask_output.log
+flask_error.log
+.venv/
+venv/
+env/

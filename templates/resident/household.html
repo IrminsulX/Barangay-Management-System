@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Household — Barangay Management System</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="sidebar-backdrop"></div>
+  <button class="mobile-hamburger-resident" id="hamburgerResident">&#9776;</button>
+
+  <div class="resident-sidebar">
+    <div class="sidebar-header" style="gap:0;flex-direction:column;text-align:center;">
+      <img src="/static/img/logo.png" alt="Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid var(--secondary);">
+      <h2>Barangay 779</h2>
+      <small>Management System</small>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Resident Portal</div>
+      <a href="/resident/home"><span class="icon">&#128240;</span> Announcements</a>
+      <a href="/resident/requests"><span class="icon">&#128203;</span> My Requests</a>
+      <a href="/resident/file-request"><span class="icon">&#10133;</span> File Request</a>
+      <a href="/resident/complaints"><span class="icon">&#128220;</span> My Complaints</a>
+      <a href="/resident/file-complaint"><span class="icon">&#10133;</span> File Complaint</a>
+      <a href="/resident/household" class="active"><span class="icon">&#127968;</span> My Household</a>
+      <div class="nav-section">Administration</div>
+      <a href="/admin/dashboard" id="adminLinkSidebar" style="display:none;"><span class="icon">&#128736;</span> Admin Panel</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar">R</div>
+      <div class="user-info">
+        <div class="name" id="sidebarNameResident">User</div>
+        <div class="role" id="roleTagResident">Resident</div>
+      </div>
+      <button type="button" class="logout-btn" title="Logout">&#128682;</button>
+    </div>
+  </div>
+
+  <div class="resident-content">
+    <div class="page-header">
+      <h1>My Household</h1>
+    </div>
+
+    <div id="householdContainer">
+      <div class="empty-state"><p>Loading household information...</p></div>
+    </div>
+  </div>
+
+  <!-- Add Member Modal -->
+  <div class="modal-overlay" id="addMemberModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add Household Member</h3>
+        <button class="modal-close" onclick="closeModal('addMemberModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="mFullName" required>
+          </div>
+          <div class="form-group">
+            <label>Birthdate</label>
+            <input type="date" id="mBirthdate" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Sex</label>
+            <select id="mSex">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Civil Status</label>
+            <select id="mCivilStatus">
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Separated">Separated</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Contact Number</label>
+          <input type="text" id="mContact" placeholder="09XX-XXX-XXXX">
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="mVoter" value="1"> Registered Voter</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('addMemberModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="addMember()">Add Member</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const s = await api('/api/session');
+      if (!s || !s.logged_in) { window.location.href = '/login'; return; }
+      document.getElementById('sidebarNameResident').textContent = s.username;
+      const roleTag = document.getElementById('roleTagResident');
+      if (roleTag) {
+        roleTag.textContent = s.role;
+        if (s.role !== 'resident') roleTag.style.color = 'var(--secondary)';
+      }
+      const adminLink = document.getElementById('adminLinkSidebar');
+      if (adminLink && s.role !== 'resident') adminLink.style.display = 'flex';
+      loadHousehold();
+
+      const hamburger = document.getElementById('hamburgerResident');
+      const sidebar = document.querySelector('.resident-sidebar');
+      const backdrop = document.querySelector('.sidebar-backdrop');
+      if (hamburger && sidebar) {
+        hamburger.addEventListener('click', function() {
+          sidebar.classList.toggle('open');
+          if (backdrop) backdrop.classList.toggle('show');
+        });
+        if (backdrop) {
+          backdrop.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('show');
+          });
+        }
+      }
+    });
+
+    async function loadHousehold() {
+      const data = await api('/api/my-household');
+      const container = document.getElementById('householdContainer');
+      if (!data || !data.household) {
+        container.innerHTML = `
+          <div class="card">
+            <div class="empty-state">
+              <div class="empty-icon">&#127968;</div>
+              <p>You are not assigned to any household yet.</p>
+              <p style="font-size:13px;margin-top:8px;">Please contact the Barangay Hall to update your household information.</p>
+            </div>
+          </div>`;
+        return;
+      }
+      const h = data.household;
+      const me = h.current_resident;
+      container.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <h3>${h.household_code} — ${h.address}</h3>
+            <button class="btn btn-primary" onclick="openModal('addMemberModal')">+ Add Member</button>
+          </div>
+          <div style="padding:16px 20px;">
+            <p><strong>Head of Household:</strong> ${h.head_name || 'Not assigned'}</p>
+            <p><strong>Address:</strong> ${h.address}</p>
+            <p><strong>Total Members:</strong> ${h.member_count}</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3>Household Members</h3>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Full Name</th>
+                  <th>Birthdate</th>
+                  <th>Age</th>
+                  <th>Sex</th>
+                  <th>Civil Status</th>
+                  <th>Contact</th>
+                  <th>Voter</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${h.members.map(m => `
+                  <tr${m.id === me.id ? ' style="background:#f0f7ff;"' : ''}>
+                    <td><strong>${m.full_name}</strong>${m.id === h.head_resident_id ? ' (Head)' : ''}${m.id === me.id ? ' <em>(You)</em>' : ''}</td>
+                    <td>${formatDate(m.birthdate)}</td>
+                    <td>${computeAge(m.birthdate)}</td>
+                    <td>${m.sex}</td>
+                    <td>${m.civil_status}</td>
+                    <td>${m.contact_number || '—'}</td>
+                    <td>${m.voter_status ? '&#10004;' : '—'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    async function addMember() {
+      const data = {
+        full_name: document.getElementById('mFullName').value,
+        birthdate: document.getElementById('mBirthdate').value,
+        sex: document.getElementById('mSex').value,
+        civil_status: document.getElementById('mCivilStatus').value,
+        contact_number: document.getElementById('mContact').value,
+        voter_status: document.getElementById('mVoter').checked ? 1 : 0
+      };
+      if (!data.full_name || !data.birthdate) {
+        showToast('Full name and birthdate are required', 'error');
+        return;
+      }
+      const res = await api('/api/my-household/members', { method: 'POST', body: data });
+      if (res) {
+        showToast('New member added to household!');
+        closeModal('addMemberModal');
+        document.getElementById('mFullName').value = '';
+        document.getElementById('mBirthdate').value = '';
+        document.getElementById('mSex').value = 'Male';
+        document.getElementById('mCivilStatus').value = 'Single';
+        document.getElementById('mContact').value = '';
+        document.getElementById('mVoter').checked = false;
+        loadHousehold();
+      }
+    }
+  </script>
+</body>
+</html>

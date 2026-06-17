@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blotter — Barangay Management System</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <div class="sidebar-backdrop"></div>
+  <button class="mobile-hamburger" id="hamburger">&#9776;</button>
+
+  <div class="sidebar">
+    <div class="sidebar-header" style="gap:0;flex-direction:column;text-align:center;">
+      <img src="/static/img/logo.png" alt="Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid var(--secondary);">
+      <div>
+        <h2>Barangay 779</h2>
+        <small>Management System</small>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="/admin/dashboard"><span class="icon">&#9679;</span> Dashboard</a>
+      <a href="/admin/residents"><span class="icon">&#128101;</span> Residents</a>
+      <a href="/admin/households"><span class="icon">&#127968;</span> Households</a>
+      <div class="nav-section">Services</div>
+      <a href="/admin/requests"><span class="icon">&#128203;</span> Requests</a>
+      <a href="/admin/blotter" class="active"><span class="icon">&#128220;</span> Blotter</a>
+      <a href="/admin/announcements"><span class="icon">&#128240;</span> Announcements</a>
+      <div class="nav-section">Portal</div>
+      <a href="/resident/home"><span class="icon">&#127760;</span> Resident Portal</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <div class="name" id="sidebarName">User</div>
+        <div class="role" id="sidebarRole">admin</div>
+      </div>
+      <button class="logout-btn" title="Logout">&#128682;</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <div>
+        <h1>Blotter Records</h1>
+        <div class="breadcrumb">Admin / <span>Blotter</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>All Blotter Entries</h3>
+        <div class="card-actions">
+          <select id="statusFilter" onchange="loadBlotter()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;">
+            <option value="">All Status</option>
+            <option value="Filed">Filed</option>
+            <option value="Under Investigation">Under Investigation</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Dismissed">Dismissed</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Case #</th>
+              <th>Complainant</th>
+              <th>Respondent</th>
+              <th>Incident</th>
+              <th>Date Filed</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="blotterBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Status Modal -->
+  <div class="modal-overlay" id="statusModal">
+    <div class="modal" style="max-width:500px;">
+      <div class="modal-header">
+        <h3>Update Blotter Case</h3>
+        <button class="modal-close" onclick="closeModal('statusModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editBlotterId">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="blotterStatus">
+            <option value="Filed">Filed</option>
+            <option value="Under Investigation">Under Investigation</option>
+            <option value="Resolved">Resolved</option>
+            <option value="Dismissed">Dismissed</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Resolution Notes</label>
+          <textarea id="blotterNotes" rows="4" placeholder="Enter investigation findings, resolution details..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('statusModal')">Cancel</button>
+        <button class="btn btn-primary" onclick="updateBlotter()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSessionBL();
+      loadBlotter();
+    });
+
+    async function loadSessionBL() {
+      const s = await api('/api/session');
+      if (!s || !s.logged_in) { window.location.href = '/login'; return; }
+      document.getElementById('sidebarName').textContent = s.username;
+      document.getElementById('sidebarRole').textContent = s.role;
+    }
+
+    async function loadBlotter() {
+      const statusFilter = document.getElementById('statusFilter').value;
+      const data = await api('/api/blotter') || [];
+      const tbody = document.getElementById('blotterBody');
+      const filtered = statusFilter ? data.filter(b => b.status === statusFilter) : data;
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>No blotter entries found</p></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map(b => `<tr>
+        <td>#${b.id}</td>
+        <td><strong>${b.complainant_name}</strong></td>
+        <td>${b.respondent_name}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.incident_details}</td>
+        <td>${formatDate(b.date_filed)}</td>
+        <td>${statusBadge(b.status)}</td>
+        <td class="actions">
+          <button class="btn btn-sm btn-primary" onclick="openBlotterModal(${b.id},'${b.status}','${(b.resolution_notes||'').replace(/'/g,"\\'")}')">Update</button>
+          <button class="btn btn-sm btn-info" onclick="printBlotter(${b.id})">Print</button>
+        </td>
+      </tr>`).join('');
+    }
+
+    function openBlotterModal(id, status, notes) {
+      document.getElementById('editBlotterId').value = id;
+      document.getElementById('blotterStatus').value = status;
+      document.getElementById('blotterNotes').value = notes || '';
+      openModal('statusModal');
+    }
+
+    async function updateBlotter() {
+      const id = document.getElementById('editBlotterId').value;
+      const status = document.getElementById('blotterStatus').value;
+      const notes = document.getElementById('blotterNotes').value;
+      await api(`/api/blotter/${id}`, { method: 'PUT', body: { status, resolution_notes: notes } });
+      showToast(`Case #${id} updated`);
+      closeModal('statusModal');
+      loadBlotter();
+    }
+
+    function printBlotter(id) {
+      window.open(`/api/print/blotter/${id}`, '_blank', 'width=800,height=600');
+    }
+  </script>
+</body>
+</html>

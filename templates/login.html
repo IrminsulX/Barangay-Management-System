@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — Barangay Management System</title>
+  <link rel="icon" type="image/png" href="/static/img/logo.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <img src="/static/img/logo.png" alt="Logo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block;border:3px solid var(--secondary);">
+    <h1>Barangay 779</h1>
+    <p class="subtitle">Management System — Sign In</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
+        Sign In
+      </button>
+    </form>
+    <p class="login-footer">Barangay Management System v1.0</p>
+  </div>
+  <script src="/static/js/main.js"></script>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('loginBtn');
+      const err = document.getElementById('loginError');
+      btn.disabled = true;
+      btn.textContent = 'Signing in...';
+      err.style.display = 'none';
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.href = data.role === 'resident'
+            ? '/resident/home' : '/admin/dashboard';
+        } else {
+          err.textContent = data.error || 'Invalid username or password';
+          err.style.display = 'block';
+        }
+      } catch (e) {
+        err.textContent = 'Connection error. Please try again.';
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Sign In';
+      }
+    });
+  </script>
+</body>
+</html>
