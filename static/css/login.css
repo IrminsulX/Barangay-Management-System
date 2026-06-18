@@ -1,0 +1,197 @@
+/* ── Login Page ───────────────────────────────────── */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-bg-shapes {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.login-bg-shapes .shape {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.08;
+}
+
+.login-bg-shapes .shape-1 {
+  width: 600px; height: 600px;
+  background: var(--secondary);
+  top: -200px; right: -150px;
+  animation: floatShape 20s ease-in-out infinite;
+}
+
+.login-bg-shapes .shape-2 {
+  width: 400px; height: 400px;
+  background: white;
+  bottom: -100px; left: -100px;
+  animation: floatShape 25s ease-in-out infinite reverse;
+}
+
+.login-bg-shapes .shape-3 {
+  width: 200px; height: 200px;
+  background: var(--secondary-light);
+  top: 50%; left: 10%;
+  animation: floatShape 18s ease-in-out infinite 2s;
+}
+
+@keyframes floatShape {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -30px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+.login-container {
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 48px 40px 40px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.1),
+    0 20px 60px rgba(0,0,0,0.15),
+    0 4px 20px rgba(0,0,0,0.08);
+  text-align: center;
+  animation: loginFadeIn 0.5s ease-out;
+  position: relative;
+}
+
+@keyframes loginFadeIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.login-header { margin-bottom: 32px; }
+
+.login-logo {
+  width: 72px; height: 72px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(26,58,92,0.25);
+  position: relative;
+}
+
+.login-logo::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(200,164,78,0.3);
+}
+
+.login-logo-img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+
+.login-header h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+
+.login-header .login-subtitle {
+  color: var(--text-light);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.login-container .login-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.login-container .login-error.show {
+  display: flex;
+  animation: shakeError 0.4s ease;
+}
+
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.login-error-icon {
+  width: 20px; height: 20px;
+  background: #dc2626;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 13px;
+  font-size: 15px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(26,58,92,0.3);
+}
+
+.login-btn:active { transform: translateY(0); }
+
+.login-btn .btn-text { transition: opacity 0.2s ease; }
+
+.login-btn .btn-spinner {
+  display: none;
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  position: absolute;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.login-btn.loading .btn-text { opacity: 0; }
+.login-btn.loading .btn-spinner { display: block; }
+
+.login-footer {
+  margin-top: 24px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}

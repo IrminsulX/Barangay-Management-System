@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Resident{% endblock %} — Barangay Management System</title>
   <link rel="icon" type="image/png" href="/static/img/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/resident.css">
   {% block head_extra %}{% endblock %}
 </head>
 <body>
@@ -98,22 +99,6 @@
       document.getElementById('sidebarAvatarResident').textContent = initial;
       const adminLink = document.getElementById('adminLinkSidebar');
       if (adminLink && s.role !== 'resident') adminLink.style.display = 'flex';
-
-      const hamburger = document.getElementById('hamburgerResident');
-      const sidebar = document.querySelector('.resident-sidebar');
-      const backdrop = document.querySelector('.sidebar-backdrop');
-      if (hamburger && sidebar) {
-        hamburger.addEventListener('click', function() {
-          sidebar.classList.toggle('open');
-          if (backdrop) backdrop.classList.toggle('show');
-        });
-        if (backdrop) {
-          backdrop.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            backdrop.classList.remove('show');
-          });
-        }
-      }
 
       if (typeof pageReady === 'function') pageReady(s);
     });

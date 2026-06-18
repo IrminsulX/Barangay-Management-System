@@ -320,13 +320,35 @@ document.addEventListener('DOMContentLoaded', function() {
   const backdrop = document.querySelector('.sidebar-backdrop');
   if (hamburger && sidebar) {
     hamburger.addEventListener('click', function() {
+      const isOpen = sidebar.classList.contains('open');
       sidebar.classList.toggle('open');
       if (backdrop) backdrop.classList.toggle('show');
+      hamburger.style.display = isOpen ? 'flex' : 'none';
     });
     if (backdrop) {
       backdrop.addEventListener('click', function() {
         sidebar.classList.remove('open');
         backdrop.classList.remove('show');
+        if (hamburger) hamburger.style.display = 'flex';
+      });
+    }
+  }
+
+  const hamburgerRes = document.getElementById('hamburgerResident');
+  const sidebarRes = document.querySelector('.resident-sidebar');
+  const backdropRes = document.querySelector('.sidebar-backdrop');
+  if (hamburgerRes && sidebarRes) {
+    hamburgerRes.addEventListener('click', function() {
+      const isOpen = sidebarRes.classList.contains('open');
+      sidebarRes.classList.toggle('open');
+      if (backdropRes) backdropRes.classList.toggle('show');
+      hamburgerRes.style.display = isOpen ? 'flex' : 'none';
+    });
+    if (backdropRes) {
+      backdropRes.addEventListener('click', function() {
+        sidebarRes.classList.remove('open');
+        backdropRes.classList.remove('show');
+        if (hamburgerRes) hamburgerRes.style.display = 'flex';
       });
     }
   }

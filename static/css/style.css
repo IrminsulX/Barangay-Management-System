@@ -814,8 +814,14 @@ table tbody tr:last-child td { border-bottom: none; }
 
 table .actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
+  justify-content: flex-end;
+}
+
+table th:last-child,
+table td:last-child {
+  text-align: right;
 }
 
 .case-number {
@@ -1604,12 +1610,12 @@ table .actions {
     cursor: pointer;
     position: fixed;
     top: 12px;
-    left: 12px;
+    right: 12px;
     z-index: 1100;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: opacity 0.2s ease;
   }
-
   .sidebar-backdrop {
     display: none;
     position: fixed;
@@ -1648,13 +1654,17 @@ table .actions {
     cursor: pointer;
     position: fixed;
     top: 12px;
-    left: 12px;
+    right: 12px;
     z-index: 1100;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: opacity 0.2s ease;
   }
 
   .detail-grid { grid-template-columns: 1fr; }
+
+  table .actions { flex-direction: column; gap: 3px; }
+  table .actions .btn-sm { padding: 4px 10px; font-size: 11px; }
 }
 
 .mobile-hamburger { display: none; }
