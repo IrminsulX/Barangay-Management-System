@@ -1034,6 +1034,7 @@ def api_schedules_create():
     data = request.get_json()
     user_id = data.get('user_id')
     day_of_week = data.get('day_of_week')
+    schedule_date = data.get('schedule_date')
     start_time = data.get('start_time')
     end_time = data.get('end_time')
     duty_type = data.get('duty_type', 'Office Hours')
@@ -1044,11 +1045,12 @@ def api_schedules_create():
         return jsonify({'error': 'day_of_week must be 0-6'}), 400
 
     sid = query(
-        "INSERT INTO schedules (user_id, day_of_week, start_time, end_time, duty_type) VALUES (?, ?, ?, ?, ?)",
-        [user_id, day_of_week, start_time, end_time, duty_type]
+        "INSERT INTO schedules (user_id, day_of_week, schedule_date, start_time, end_time, duty_type) VALUES (?, ?, ?, ?, ?, ?)",
+        [user_id, day_of_week, schedule_date, start_time, end_time, duty_type]
     )
     user = query("SELECT username FROM users WHERE id = ?", [user_id], one=True)
-    log_activity('create', 'schedule', sid, f"Added schedule on {DAY_NAMES[day_of_week]} for {user['username']}")
+    label = schedule_date or DAY_NAMES[day_of_week]
+    log_activity('create', 'schedule', sid, f"Added schedule on {label} for {user['username']}")
     return jsonify({'success': True, 'id': sid}), 201
 
 @app.route('/api/schedules/<int:sid>', methods=['DELETE'])
@@ -1327,6 +1329,20 @@ if __name__ == '__main__':
                     ALTER TABLE users_new RENAME TO users;
                 """)
                 conn.execute("PRAGMA foreign_keys = ON")
+                conn.commit()
+        finally:
+            try: conn.close()
+            except: pass
+
+    # Migration: add schedule_date column to schedules table
+    if os.path.exists(DATABASE):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            conn.execute("PRAGMA foreign_keys = ON")
+            cur = conn.execute("PRAGMA table_info(schedules)")
+            cols = [row[1] for row in cur.fetchall()]
+            if 'schedule_date' not in cols:
+                conn.execute("ALTER TABLE schedules ADD COLUMN schedule_date DATE")
                 conn.commit()
         finally:
             try: conn.close()

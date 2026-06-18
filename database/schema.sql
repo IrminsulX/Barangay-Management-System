@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE TABLE IF NOT EXISTS schedules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
+    schedule_date DATE,
     day_of_week INTEGER NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,

@@ -65,8 +65,9 @@
           html += '<div class="cal-cell cal-empty"></div>';
         } else {
           const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+          const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
           const dow = c === 0 ? 6 : c - 1;
-          const slots = scheduleData.filter(s => s.day_of_week === dow);
+          const slots = scheduleData.filter(s => s.schedule_date ? s.schedule_date === dateStr : s.day_of_week === dow);
           html += `<div class="cal-cell cal-day${isToday ? ' cal-today' : ''}" onclick="showDayDetail(${day})">
             <div class="cal-day-num">${day}</div>
             <div class="cal-slots">`;
@@ -88,9 +89,10 @@
   }
 
   function showDayDetail(day) {
+    const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const dow = new Date(currentYear, currentMonth, day).getDay();
     const adjustedDow = dow === 0 ? 6 : dow - 1;
-    const slots = scheduleData.filter(s => s.day_of_week === adjustedDow);
+    const slots = scheduleData.filter(s => s.schedule_date ? s.schedule_date === dateStr : s.day_of_week === adjustedDow);
     if (!slots.length) { showToast('No schedules on this day', 'info'); return; }
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     const detail = slots.map(s =>
