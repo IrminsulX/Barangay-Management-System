@@ -30,13 +30,14 @@
   function pageReady() { loadMyRequests(); }
 
   async function loadMyRequests() {
-    const data = await api('/api/requests') || [];
+    const data = await api('/api/requests');
+    const rows = data?.rows || [];
     const tbody = document.getElementById('reqBody');
-    if (!data.length) {
+    if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No requests yet. <a href="/resident/file-request">File one now</a></p></div></td></tr>';
       return;
     }
-    tbody.innerHTML = data.map(r => `<tr>
+    tbody.innerHTML = rows.map(r => `<tr>
       <td><strong>${r.document_type}</strong></td>
       <td>${r.purpose || '—'}</td>
       <td>${formatDate(r.date_requested)}</td>

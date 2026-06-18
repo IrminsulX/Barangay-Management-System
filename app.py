@@ -20,6 +20,8 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'brgy-mgmt-sys-secret-key-change-in-production')
 DATABASE = os.path.join(os.path.dirname(__file__), 'barangay.db')
 
+ADMIN_ROLES = ('admin', 'staff', 'barangay_captain', 'kagawad', 'secretary_treasurer', 'sk_chairperson', 'tanod')
+
 # ── Database Helpers ──────────────────────────────────────────────
 
 def get_db():
@@ -152,7 +154,7 @@ def admin_required(f):
     def decorated(*args, **kwargs):
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
-        if session.get('role') not in ('admin', 'staff'):
+        if session.get('role') not in ADMIN_ROLES:
             return jsonify({'error': 'Forbidden'}), 403
         return f(*args, **kwargs)
     return decorated
@@ -162,7 +164,7 @@ def admin_required(f):
 @app.route('/')
 def index():
     if 'user_id' in session:
-        if session.get('role') in ('admin', 'staff'):
+        if session.get('role') in ADMIN_ROLES:
             return redirect(url_for('admin_dashboard'))
         return redirect(url_for('resident_home'))
     return redirect(url_for('login_page'))
@@ -173,43 +175,49 @@ def login_page():
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/dashboard.html', active_page='dashboard')
 
 @app.route('/admin/residents')
 def admin_residents():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/residents.html', active_page='residents')
 
 @app.route('/admin/households')
 def admin_households():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/households.html', active_page='households')
 
 @app.route('/admin/requests')
 def admin_requests():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/requests.html', active_page='requests')
 
 @app.route('/admin/blotter')
 def admin_blotter():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/blotter.html', active_page='blotter')
 
 @app.route('/admin/announcements')
 def admin_announcements():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/announcements.html', active_page='announcements')
 
+@app.route('/admin/officials')
+def admin_officials():
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
+        return redirect(url_for('login_page'))
+    return render_template('admin/officials.html', active_page='officials')
+
 @app.route('/admin/activity-log')
 def admin_activity_log():
-    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+    if 'user_id' not in session or session.get('role') not in ADMIN_ROLES:
         return redirect(url_for('login_page'))
     return render_template('admin/activity_log.html', active_page='activity-log')
 
@@ -248,6 +256,12 @@ def resident_household():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     return render_template('resident/household.html', active_page='household')
+
+@app.route('/resident/schedule')
+def resident_schedule():
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('resident/schedule.html', active_page='schedule')
 
 @app.route('/resident/profile')
 def resident_profile():
@@ -868,7 +882,7 @@ def api_announcements():
         rows = query("SELECT * FROM announcements ORDER BY created_at DESC")
         return jsonify([dict_row(r) for r in rows])
 
-    if session.get('role') not in ('admin', 'staff'):
+    if session.get('role') not in ADMIN_ROLES:
         return jsonify({'error': 'Forbidden'}), 403
     data = request.get_json()
     aid = query(
@@ -895,6 +909,157 @@ def api_announcement(aid):
     title = former['title'] if former else f'ID {aid}'
     query("DELETE FROM announcements WHERE id = ?", [aid])
     log_activity('delete', 'announcement', aid, f"Deleted announcement: {title}")
+    return jsonify({'success': True})
+
+# ── Officials API ──────────────────────────────────────────────────
+
+@app.route('/api/officials')
+@admin_required
+def api_officials():
+    search = request.args.get('search', '')
+    where = ""
+    params = []
+    if search:
+        where = " WHERE r.full_name LIKE ?"
+        params.append(f'%{search}%')
+    role_placeholders = ','.join('?' * len(ADMIN_ROLES))
+    rows = query(f"""
+        SELECT u.id, u.username, u.role, u.created_at,
+               r.id as resident_id, r.full_name, r.email, r.contact_number
+        FROM users u
+        JOIN residents r ON u.resident_id = r.id
+        WHERE u.role IN ({role_placeholders}){where}
+        ORDER BY u.role, r.full_name
+    """, list(ADMIN_ROLES) + params)
+    return jsonify([dict_row(r) for r in rows])
+
+@app.route('/api/officials/candidates')
+@admin_required
+def api_officials_candidates():
+    search = request.args.get('search', '')
+    where = ""
+    params = []
+    if search:
+        where = " AND r.full_name LIKE ?"
+        params.append(f'%{search}%')
+    rows = query(f"""
+        SELECT r.*, u.id as user_id, u.username, u.role
+        FROM residents r
+        LEFT JOIN users u ON u.resident_id = r.id
+        WHERE (u.id IS NULL OR u.role = 'resident'){where}
+        ORDER BY r.full_name
+    """, params)
+    return jsonify([dict_row(r) for r in rows])
+
+@app.route('/api/officials/promote', methods=['POST'])
+@admin_required
+@csrf_required
+def api_officials_promote():
+    data = request.get_json()
+    resident_id = data.get('resident_id')
+    role = data.get('role', 'barangay_captain')
+    if role not in ADMIN_ROLES:
+        return jsonify({'error': 'Invalid role'}), 400
+
+    existing = query("SELECT id FROM users WHERE resident_id = ?", [resident_id], one=True)
+    if existing:
+        query("UPDATE users SET role = ? WHERE id = ?", [role, existing['id']])
+        log_activity('update', 'user', existing['id'], f"Promoted resident #{resident_id} to {role}")
+    else:
+        resident = query("SELECT * FROM residents WHERE id = ?", [resident_id], one=True)
+        if not resident:
+            return jsonify({'error': 'Resident not found'}), 404
+        username = data.get('username', '').strip() or resident['full_name'].lower().replace(' ', '.')
+        password = data.get('password', '')
+        if not password:
+            return jsonify({'error': 'Password is required for new accounts'}), 400
+        valid, err = validate_password(password)
+        if not valid:
+            return jsonify({'error': err}), 400
+        existing_u = query("SELECT id FROM users WHERE username = ?", [username], one=True)
+        if existing_u:
+            return jsonify({'error': 'Username already taken'}), 409
+        uid = query(
+            "INSERT INTO users (username, password_hash, role, resident_id) VALUES (?, ?, ?, ?)",
+            [username, generate_password_hash(password), role, resident_id]
+        )
+        log_activity('create', 'user', uid, f"Created {role} account for {resident['full_name']}")
+
+    return jsonify({'success': True})
+
+@app.route('/api/officials/<int:uid>', methods=['DELETE'])
+@admin_required
+@csrf_required
+def api_officials_remove(uid):
+    if uid == session.get('user_id'):
+        return jsonify({'error': 'Cannot remove yourself'}), 400
+    user = query("SELECT * FROM users WHERE id = ?", [uid], one=True)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    query("UPDATE users SET role = 'resident' WHERE id = ?", [uid])
+    log_activity('update', 'user', uid, f"Demoted user #{uid} to resident")
+    return jsonify({'success': True})
+
+# ── Schedules API ──────────────────────────────────────────────────
+
+DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
+
+@app.route('/api/schedules')
+@login_required
+def api_schedules():
+    user_id = request.args.get('user_id', type=int)
+    day = request.args.get('day', type=int)
+    where = ""
+    params = []
+    if user_id:
+        where += " AND s.user_id = ?"
+        params.append(user_id)
+    if day is not None:
+        where += " AND s.day_of_week = ?"
+        params.append(day)
+    rows = query(f"""
+        SELECT s.*, u.username, u.role, r.full_name, r.contact_number
+        FROM schedules s
+        JOIN users u ON s.user_id = u.id
+        JOIN residents r ON u.resident_id = r.id
+        WHERE 1=1{where}
+        ORDER BY s.day_of_week, s.start_time
+    """, params)
+    return jsonify([dict_row(r) for r in rows])
+
+@app.route('/api/schedules', methods=['POST'])
+@admin_required
+@csrf_required
+def api_schedules_create():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    day_of_week = data.get('day_of_week')
+    start_time = data.get('start_time')
+    end_time = data.get('end_time')
+    duty_type = data.get('duty_type', 'Office Hours')
+
+    if not all([user_id, day_of_week is not None, start_time, end_time]):
+        return jsonify({'error': 'user_id, day_of_week, start_time, end_time are required'}), 400
+    if day_of_week < 0 or day_of_week > 6:
+        return jsonify({'error': 'day_of_week must be 0-6'}), 400
+
+    sid = query(
+        "INSERT INTO schedules (user_id, day_of_week, start_time, end_time, duty_type) VALUES (?, ?, ?, ?, ?)",
+        [user_id, day_of_week, start_time, end_time, duty_type]
+    )
+    user = query("SELECT username FROM users WHERE id = ?", [user_id], one=True)
+    log_activity('create', 'schedule', sid, f"Added schedule on {DAY_NAMES[day_of_week]} for {user['username']}")
+    return jsonify({'success': True, 'id': sid}), 201
+
+@app.route('/api/schedules/<int:sid>', methods=['DELETE'])
+@admin_required
+@csrf_required
+def api_schedules_delete(sid):
+    sched = query("SELECT * FROM schedules WHERE id = ?", [sid], one=True)
+    if not sched:
+        return jsonify({'error': 'Schedule not found'}), 404
+    query("DELETE FROM schedules WHERE id = ?", [sid])
+    log_activity('delete', 'schedule', sid, f"Removed schedule on {DAY_NAMES[sched['day_of_week']]}")
     return jsonify({'success': True})
 
 # ── Printable Certificate Templates ───────────────────────────────
@@ -1128,7 +1293,6 @@ if __name__ == '__main__':
         from database.seed import seed
         seed()
     else:
-        # Ensure all tables exist (migration for existing DBs)
         schema_path = os.path.join(os.path.dirname(__file__), 'database', 'schema.sql')
         if os.path.exists(schema_path):
             conn = sqlite3.connect(DATABASE)
@@ -1136,5 +1300,37 @@ if __name__ == '__main__':
             with open(schema_path, 'r') as f:
                 conn.executescript(f.read())
             conn.close()
+
+    # Migration: widen users.role CHECK constraint for new role names
+    if os.path.exists(DATABASE):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            conn.execute("PRAGMA foreign_keys = ON")
+            cur = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='users'")
+            row = cur.fetchone()
+            if row and 'CHECK' in (row[0] or '').upper():
+                conn.close()
+                conn = sqlite3.connect(DATABASE)
+                conn.execute("PRAGMA foreign_keys = OFF")
+                conn.executescript("""
+                    CREATE TABLE users_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        username TEXT UNIQUE NOT NULL,
+                        password_hash TEXT NOT NULL,
+                        role TEXT NOT NULL DEFAULT 'resident',
+                        resident_id INTEGER,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE SET NULL
+                    );
+                    INSERT INTO users_new SELECT * FROM users;
+                    DROP TABLE users;
+                    ALTER TABLE users_new RENAME TO users;
+                """)
+                conn.execute("PRAGMA foreign_keys = ON")
+                conn.commit()
+        finally:
+            try: conn.close()
+            except: pass
+
     debug_mode = os.environ.get('FLASK_DEBUG', '1') == '1'
     app.run(debug=debug_mode, host='0.0.0.0', port=5000)

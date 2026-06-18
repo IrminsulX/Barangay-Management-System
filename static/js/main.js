@@ -314,42 +314,33 @@ async function api(url, options = {}) {
 }
 
 // ── Sidebar Toggle (Mobile) ─────────────────────────
+function toggleHamburger(hamburger, sidebar, backdrop) {
+  if (!hamburger || !sidebar) return;
+  sidebar.classList.toggle('open');
+  if (backdrop) backdrop.classList.toggle('show');
+  hamburger.classList.toggle('hidden');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const hamburger = document.getElementById('hamburger');
   const sidebar = document.querySelector('.sidebar');
   const backdrop = document.querySelector('.sidebar-backdrop');
+
   if (hamburger && sidebar) {
-    hamburger.addEventListener('click', function() {
-      const isOpen = sidebar.classList.contains('open');
-      sidebar.classList.toggle('open');
-      if (backdrop) backdrop.classList.toggle('show');
-      hamburger.style.display = isOpen ? 'flex' : 'none';
-    });
+    hamburger.addEventListener('click', function() { toggleHamburger(hamburger, sidebar, backdrop); });
     if (backdrop) {
-      backdrop.addEventListener('click', function() {
-        sidebar.classList.remove('open');
-        backdrop.classList.remove('show');
-        if (hamburger) hamburger.style.display = 'flex';
-      });
+      backdrop.addEventListener('click', function() { toggleHamburger(hamburger, sidebar, backdrop); });
     }
   }
 
   const hamburgerRes = document.getElementById('hamburgerResident');
   const sidebarRes = document.querySelector('.resident-sidebar');
   const backdropRes = document.querySelector('.sidebar-backdrop');
+
   if (hamburgerRes && sidebarRes) {
-    hamburgerRes.addEventListener('click', function() {
-      const isOpen = sidebarRes.classList.contains('open');
-      sidebarRes.classList.toggle('open');
-      if (backdropRes) backdropRes.classList.toggle('show');
-      hamburgerRes.style.display = isOpen ? 'flex' : 'none';
-    });
+    hamburgerRes.addEventListener('click', function() { toggleHamburger(hamburgerRes, sidebarRes, backdropRes); });
     if (backdropRes) {
-      backdropRes.addEventListener('click', function() {
-        sidebarRes.classList.remove('open');
-        backdropRes.classList.remove('show');
-        if (hamburgerRes) hamburgerRes.style.display = 'flex';
-      });
+      backdropRes.addEventListener('click', function() { toggleHamburger(hamburgerRes, sidebarRes, backdropRes); });
     }
   }
 
@@ -369,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function() {
   resetIdle();
 
   // Logout buttons
-  document.querySelectorAll('.logout-btn').forEach(btn => {
+  document.querySelectorAll('.logout-btn, .sidebar-logout').forEach(btn => {
     btn.addEventListener('click', async function(e) {
       e.preventDefault();
       await api('/api/logout', { method: 'POST' });

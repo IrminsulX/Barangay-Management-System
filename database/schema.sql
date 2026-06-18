@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin', 'staff', 'resident')),
+    role TEXT NOT NULL DEFAULT 'resident',
     resident_id INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE SET NULL
@@ -95,6 +95,17 @@ CREATE TABLE IF NOT EXISTS notifications (
     type TEXT NOT NULL DEFAULT 'info' CHECK(type IN ('info', 'success', 'warning', 'error')),
     is_read INTEGER DEFAULT 0,
     link TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS schedules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    day_of_week INTEGER NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    duty_type TEXT NOT NULL DEFAULT 'Office Hours',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

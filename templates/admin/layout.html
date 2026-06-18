@@ -53,6 +53,12 @@
         <span>Announcements</span>
       </a>
 
+      <div class="nav-label">Administration</div>
+      <a href="/admin/officials" class="nav-item {% if active_page == 'officials' %}active{% endif %}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Officials</span>
+      </a>
+
       <div class="nav-label">System</div>
       <a href="/admin/activity-log" class="nav-item {% if active_page == 'activity-log' %}active{% endif %}">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -94,7 +100,8 @@
       const session = await api('/api/session');
       if (!session || !session.logged_in) { window.location.href = '/login'; return; }
       document.getElementById('sidebarName').textContent = session.username;
-      document.getElementById('sidebarRole').textContent = session.role;
+      const roleLabels = { admin:'Admin', barangay_captain:'Barangay Captain', kagawad:'Kagawad', secretary_treasurer:'Secretary & Treasurer', sk_chairperson:'(SK) Chairperson', tanod:'Tanod' };
+      document.getElementById('sidebarRole').textContent = roleLabels[session.role] || session.role;
       const initial = session.username ? session.username.charAt(0).toUpperCase() : 'U';
       document.getElementById('sidebarAvatar').textContent = initial;
       if (typeof pageReady === 'function') pageReady(session);

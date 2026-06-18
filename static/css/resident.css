@@ -254,6 +254,7 @@
 
 /* ── Mobile Responsive ─────────────────────────────── */
 .mobile-hamburger-resident { display: none; }
+.mobile-hamburger-resident.hidden { display: none !important; }
 
 @media (max-width: 768px) {
   .resident-sidebar { transform: translateX(-100%); }
@@ -265,7 +266,7 @@
   }
 
   .mobile-hamburger-resident {
-    display: flex !important;
+    display: flex;
     align-items: center;
     justify-content: center;
     width: 38px; height: 38px;
@@ -281,6 +282,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: opacity 0.2s ease;
   }
+  .mobile-hamburger-resident.hidden { display: none !important; }
 
   .announcements-grid { grid-template-columns: 1fr; }
   .profile-layout { grid-template-columns: 1fr; }

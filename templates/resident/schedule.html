@@ -1,0 +1,136 @@
+{% extends "resident/layout.html" %}
+{% block title %}Official Schedule{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Barangay Official Schedule</h1>
+  <p style="color:var(--text-secondary);margin-top:4px;">Find out which official is on duty each day</p>
+</div>
+
+<div class="card">
+  <div class="calendar-nav">
+    <button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">&larr; Prev</button>
+    <h3 id="calendarTitle"></h3>
+    <button class="btn btn-outline btn-sm" onclick="changeMonth(1)">Next &rarr;</button>
+  </div>
+  <div class="calendar-grid" id="calendarGrid"></div>
+  <div class="calendar-legend">
+    <span class="legend-item"><span class="legend-dot" style="background:#4f46e5"></span> Office Hours</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#0891b2"></span> Field Duty</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span> On-Call</span>
+    <span class="legend-item"><span class="legend-dot" style="background:#d97706"></span> Holiday Duty</span>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const DAYS_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const DUTY_COLORS = { 'Office Hours':'#4f46e5', 'Field Duty':'#0891b2', 'On-Call':'#7c3aed', 'Holiday Duty':'#d97706' };
+  let currentMonth = new Date().getMonth();
+  let currentYear = new Date().getFullYear();
+  let scheduleData = [];
+
+  function pageReady() { loadSchedule(); }
+
+  async function loadSchedule() {
+    scheduleData = await api('/api/schedules') || [];
+    renderCalendar();
+  }
+
+  function changeMonth(delta) {
+    currentMonth += delta;
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    document.getElementById('calendarTitle').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const grid = document.getElementById('calendarGrid');
+
+    let html = '<div class="cal-header-row">';
+    DAYS_SHORT.forEach(d => html += `<div class="cal-header-cell">${d}</div>`);
+    html += '</div>';
+
+    const today = new Date();
+    let day = 1;
+    const rows = Math.ceil((firstDay + daysInMonth) / 7);
+    for (let r = 0; r < rows; r++) {
+      html += '<div class="cal-row">';
+      for (let c = 0; c < 7; c++) {
+        if ((r === 0 && c < firstDay) || day > daysInMonth) {
+          html += '<div class="cal-cell cal-empty"></div>';
+        } else {
+          const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+          const dow = c === 0 ? 6 : c - 1;
+          const slots = scheduleData.filter(s => s.day_of_week === dow);
+          html += `<div class="cal-cell cal-day${isToday ? ' cal-today' : ''}" onclick="showDayDetail(${day})">
+            <div class="cal-day-num">${day}</div>
+            <div class="cal-slots">`;
+          slots.slice(0, 3).forEach(s => {
+            const color = DUTY_COLORS[s.duty_type] || '#6b7280';
+            html += `<span class="cal-slot-pill" style="background:${color}18;color:${color}">
+              <span class="cal-slot-dot" style="background:${color}"></span>
+              ${escapeHtml(s.full_name.split(' ')[0])} ${s.start_time}
+            </span>`;
+          });
+          if (slots.length > 3) html += `<span class="cal-more">+${slots.length - 3} more</span>`;
+          html += `</div></div>`;
+          day++;
+        }
+      }
+      html += '</div>';
+    }
+    grid.innerHTML = html;
+  }
+
+  function showDayDetail(day) {
+    const dow = new Date(currentYear, currentMonth, day).getDay();
+    const adjustedDow = dow === 0 ? 6 : dow - 1;
+    const slots = scheduleData.filter(s => s.day_of_week === adjustedDow);
+    if (!slots.length) { showToast('No schedules on this day', 'info'); return; }
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const detail = slots.map(s =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div><strong>${escapeHtml(s.full_name)}</strong><br><small>${s.start_time} — ${s.end_time}</small></div>
+        <span class="badge badge-info">${escapeHtml(s.duty_type)}</span>
+      </div>`
+    ).join('');
+    showCustomDialog(
+      `Schedules for ${monthNames[currentMonth]} ${day}, ${currentYear}`,
+      `<div style="max-height:300px;overflow-y:auto">${detail}</div>`
+    );
+  }
+
+  function showCustomDialog(title, bodyHtml) {
+    let overlay = document.getElementById('dayDetailModal');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'dayDetailModal';
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `<div class="modal" style="max-width:460px">
+        <div class="modal-header"><h3 id="dayDetailTitle"></h3><button class="modal-close" onclick="closeModal('dayDetailModal')">&times;</button></div>
+        <div class="modal-body" id="dayDetailBody"></div>
+        <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dayDetailModal')">Close</button></div>
+      </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) overlay.classList.remove('show');
+      });
+    }
+    document.getElementById('dayDetailTitle').textContent = title;
+    document.getElementById('dayDetailBody').innerHTML = bodyHtml;
+    overlay.classList.add('show');
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '—';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+{% endblock %}

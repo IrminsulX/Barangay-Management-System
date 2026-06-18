@@ -190,6 +190,7 @@
 
 /* ── Mobile Responsive ─────────────────────────────── */
 .mobile-hamburger { display: none; }
+.mobile-hamburger.hidden { display: none !important; }
 
 @media (max-width: 768px) {
   .sidebar { transform: translateX(-100%); }
@@ -201,7 +202,7 @@
   }
 
   .mobile-hamburger {
-    display: flex !important;
+    display: flex;
     align-items: center;
     justify-content: center;
     width: 38px; height: 38px;
@@ -217,6 +218,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: opacity 0.2s ease;
   }
+  .mobile-hamburger.hidden { display: none; }
 
   .sidebar-backdrop {
     display: none;
@@ -232,3 +234,12 @@
   .charts-row { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 }
+
+/* ── Tabs ── */
+.tabs { display:flex; gap:4px; margin-bottom:20px; background:var(--card-bg); border-radius:12px; padding:4px; border:1px solid var(--border); }
+.tab { padding:10px 20px; border:none; background:transparent; color:var(--text-secondary); font-weight:500; font-size:14px; border-radius:10px; cursor:pointer; transition:all .2s; }
+.tab.active { background:var(--primary); color:white; }
+.tab:hover:not(.active) { background:var(--hover-bg); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
