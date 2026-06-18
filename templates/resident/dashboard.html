@@ -16,71 +16,47 @@
 </div>
 
 <div class="resident-dashboard-grid">
-  <div class="card">
-    <div class="card-header">
-      <h3>Recent Requests</h3>
-      <a href="/resident/requests" class="btn btn-sm btn-primary">View All</a>
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <div class="dash-card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <h3>Recent Requests</h3>
+      </div>
+      <a href="/resident/requests" class="dash-card-action">View All &rarr;</a>
     </div>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Document</th>
-            <th>Status</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody id="recentRequestsBody"></tbody>
-      </table>
-    </div>
+    <div class="dash-card-body" id="recentRequestsBody"></div>
   </div>
 
-  <div class="card">
-    <div class="card-header">
-      <h3>Recent Complaints</h3>
-      <a href="/resident/complaints" class="btn btn-sm btn-primary">View All</a>
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <div class="dash-card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <h3>Recent Complaints</h3>
+      </div>
+      <a href="/resident/complaints" class="dash-card-action">View All &rarr;</a>
     </div>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Complaint</th>
-            <th>Status</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody id="recentComplaintsBody"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<div class="resident-dashboard-grid">
-  <div class="card">
-    <div class="card-header">
-      <h3>Upcoming Official Schedules</h3>
-      <a href="/resident/schedule" class="btn btn-sm btn-primary">View Calendar</a>
-    </div>
-    <div class="table-wrapper">
-      <table>
-        <thead>
-          <tr>
-            <th>Official</th>
-            <th>Duty</th>
-            <th>Date</th>
-            <th>Time</th>
-          </tr>
-        </thead>
-        <tbody id="upcomingSchedulesBody"></tbody>
-      </table>
-    </div>
+    <div class="dash-card-body" id="recentComplaintsBody"></div>
   </div>
 
-  <div class="card">
-    <div class="card-header">
-      <h3>Latest Announcements</h3>
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <div class="dash-card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/></svg>
+        <h3>Upcoming Schedules</h3>
+      </div>
+      <a href="/resident/schedule" class="dash-card-action">Calendar &rarr;</a>
     </div>
-    <div id="latestAnnouncements" class="card-body"></div>
+    <div class="dash-card-body" id="upcomingSchedulesBody"></div>
+  </div>
+
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <div class="dash-card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+        <h3>Latest Announcements</h3>
+      </div>
+    </div>
+    <div class="dash-card-body" id="latestAnnouncementsBody"></div>
   </div>
 </div>
 {% endblock %}
@@ -97,54 +73,82 @@
     document.getElementById('statReleasedRequests').textContent = data.request_counts.released;
     document.getElementById('statOpenComplaints').textContent = data.complaint_counts.open;
 
-    const tbody1 = document.getElementById('recentRequestsBody');
+    const b1 = document.getElementById('recentRequestsBody');
     if (data.recent_requests?.length) {
-      tbody1.innerHTML = data.recent_requests.map(r => `<tr>
-        <td>${escapeHtml(r.document_type)}</td>
-        <td>${statusBadge(r.status)}</td>
-        <td>${formatDate(r.created_at)}</td>
-      </tr>`).join('');
+      b1.innerHTML = data.recent_requests.map(r => `
+        <div class="dash-feed-item">
+          <div class="dash-feed-icon doc">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="dash-feed-content">
+            <div class="dash-feed-title">${escapeHtml(r.document_type)}</div>
+            <div class="dash-feed-meta">${timeAgo(r.created_at)}</div>
+          </div>
+          <div class="dash-feed-end">${statusBadge(r.status)}</div>
+        </div>
+      `).join('');
     } else {
-      tbody1.innerHTML = '<tr><td colspan="3" class="empty-state"><p>No requests yet</p></td></tr>';
+      b1.innerHTML = '<div class="dash-empty"><p>No requests yet</p><a href="/resident/file-request" class="btn btn-sm btn-primary">File a Request</a></div>';
     }
 
-    const tbody2 = document.getElementById('recentComplaintsBody');
+    const b2 = document.getElementById('recentComplaintsBody');
     if (data.recent_complaints?.length) {
-      tbody2.innerHTML = data.recent_complaints.map(c => `<tr>
-        <td>${escapeHtml(c.complaint?.substring(0, 40))}${(c.complaint?.length > 40) ? '...' : ''}</td>
-        <td>${statusBadge(c.status)}</td>
-        <td>${formatDate(c.created_at)}</td>
-      </tr>`).join('');
+      b2.innerHTML = data.recent_complaints.map(c => `
+        <div class="dash-feed-item">
+          <div class="dash-feed-icon complaint">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </div>
+          <div class="dash-feed-content">
+            <div class="dash-feed-title">${escapeHtml(c.complaint?.substring(0, 50))}${(c.complaint?.length > 50) ? '...' : ''}</div>
+            <div class="dash-feed-meta">vs ${escapeHtml(c.respondent_name)} &middot; ${timeAgo(c.created_at)}</div>
+          </div>
+          <div class="dash-feed-end">${statusBadge(c.status)}</div>
+        </div>
+      `).join('');
     } else {
-      tbody2.innerHTML = '<tr><td colspan="3" class="empty-state"><p>No complaints filed</p></td></tr>';
+      b2.innerHTML = '<div class="dash-empty"><p>No complaints filed</p><a href="/resident/file-complaint" class="btn btn-sm btn-primary">File a Complaint</a></div>';
     }
 
-    const tbody3 = document.getElementById('upcomingSchedulesBody');
+    const b3 = document.getElementById('upcomingSchedulesBody');
     if (data.schedules?.length) {
-      tbody3.innerHTML = data.schedules.map(s => {
-        const dateStr = s.schedule_date ? formatDate(s.schedule_date) : (s.day_of_week !== null ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][s.day_of_week] : '—');
+      b3.innerHTML = data.schedules.map(s => {
+        const dateObj = s.schedule_date ? new Date(s.schedule_date + 'T00:00:00') : null;
+        const day = dateObj ? dateObj.getDate() : '—';
+        const month = dateObj ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dateObj.getMonth()] : '';
         const timeStr = s.start_time && s.end_time ? formatTime(s.start_time) + ' — ' + formatTime(s.end_time) : '—';
-        return `<tr>
-          <td><strong>${escapeHtml(s.official_name)}</strong></td>
-          <td>${escapeHtml(s.duty_type)}</td>
-          <td>${dateStr}</td>
-          <td>${timeStr}</td>
-        </tr>`;
+        return `
+        <div class="dash-feed-item">
+          <div class="dash-date-badge">
+            <span class="dash-date-badge-day">${day}</span>
+            <span class="dash-date-badge-month">${month}</span>
+          </div>
+          <div class="dash-feed-content">
+            <div class="dash-feed-title">${escapeHtml(s.duty_type)}</div>
+            <div class="dash-feed-meta">${escapeHtml(s.official_name)} &middot; ${timeStr}</div>
+          </div>
+          <div class="dash-feed-end">
+            <span class="duty-tag">${escapeHtml(s.duty_type?.split(' ')[0] || '')}</span>
+          </div>
+        </div>`;
       }).join('');
     } else {
-      tbody3.innerHTML = '<tr><td colspan="4" class="empty-state"><p>No upcoming schedules</p></td></tr>';
+      b3.innerHTML = '<div class="dash-empty"><p>No upcoming schedules</p></div>';
     }
 
-    const annDiv = document.getElementById('latestAnnouncements');
+    const b4 = document.getElementById('latestAnnouncementsBody');
     if (data.announcements?.length) {
-      annDiv.innerHTML = data.announcements.map(a => `<div class="announcement-mini">
-        <span class="ann-category ${(a.category || 'General').toLowerCase().replace(/ & /g,'-').replace(/\s+/g,'-')}">${a.category}</span>
-        <h4>${escapeHtml(a.title)}</h4>
-        <p>${escapeHtml(a.description)}</p>
-        <div class="ann-meta"><span>${formatDate(a.created_at)}</span></div>
-      </div>`).join('');
+      b4.innerHTML = data.announcements.map(a => {
+        const catClass = (a.category || 'General').toLowerCase().replace(/ & /g,'-').replace(/\s+/g,'-');
+        return `
+        <div class="dash-announcement">
+          <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
+          <h4 class="dash-ann-title">${escapeHtml(a.title)}</h4>
+          <p class="dash-ann-desc">${escapeHtml(a.description)}</p>
+          <div class="dash-ann-date">${timeAgo(a.created_at)}</div>
+        </div>`;
+      }).join('');
     } else {
-      annDiv.innerHTML = '<p class="empty-state">No announcements</p>';
+      b4.innerHTML = '<div class="dash-empty"><p>No announcements</p></div>';
     }
   }
 
@@ -158,6 +162,18 @@
       'Resolved': 'badge badge-success'
     }[status] || 'badge';
     return `<span class="${cls}">${status}</span>`;
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const now = new Date();
+    const d = new Date(dateStr);
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    return formatDate(dateStr);
   }
 
   function formatTime(t) {
