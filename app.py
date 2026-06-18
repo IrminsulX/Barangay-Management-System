@@ -975,10 +975,10 @@ def api_officials_promote():
     if role not in ADMIN_ROLES:
         return jsonify({'error': 'Invalid role'}), 400
 
-    existing = query("SELECT id FROM users WHERE resident_id = ?", [resident_id], one=True)
+    existing = query("SELECT u.id, r.full_name FROM users u JOIN residents r ON u.resident_id = r.id WHERE u.resident_id = ?", [resident_id], one=True)
     if existing:
         query("UPDATE users SET role = ? WHERE id = ?", [role, existing['id']])
-        log_activity('update', 'user', existing['id'], f"Promoted resident #{resident_id} to {role}")
+        log_activity('update', 'user', existing['id'], f"Promoted {existing['full_name']} to {role}")
     else:
         resident = query("SELECT * FROM residents WHERE id = ?", [resident_id], one=True)
         if not resident:
@@ -1007,11 +1007,11 @@ def api_officials_promote():
 def api_officials_remove(uid):
     if uid == session.get('user_id'):
         return jsonify({'error': 'Cannot remove yourself'}), 400
-    user = query("SELECT * FROM users WHERE id = ?", [uid], one=True)
+    user = query("SELECT u.*, r.full_name FROM users u JOIN residents r ON u.resident_id = r.id WHERE u.id = ?", [uid], one=True)
     if not user:
         return jsonify({'error': 'User not found'}), 404
     query("UPDATE users SET role = 'resident' WHERE id = ?", [uid])
-    log_activity('update', 'user', uid, f"Demoted user #{uid} to resident")
+    log_activity('update', 'user', uid, f"Demoted {user['full_name']} ({user['username']}) to resident")
     return jsonify({'success': True})
 
 # ── Schedules API ──────────────────────────────────────────────────

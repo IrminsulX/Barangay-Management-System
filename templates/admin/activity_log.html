@@ -58,12 +58,13 @@
     tbody.innerHTML = '';
     if (data.rows?.length) {
       data.rows.forEach(a => {
+        const detailHtml = buildDetail(a);
         tbody.innerHTML += `<tr>
           <td>${formatDateTime(a.created_at)}</td>
           <td><strong>${escapeHtml(a.username)}</strong></td>
           <td>${actionBadge(a.action)}</td>
           <td>${entityBadge(a.entity_type, a.entity_name, a.entity_id)}</td>
-          <td>${escapeHtml(a.details || '')}</td>
+          <td>${detailHtml}</td>
         </tr>`;
       });
     } else {
@@ -99,6 +100,18 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function buildDetail(a) {
+    let text = a.details || '';
+    if (a.entity_name && text) {
+      const name = escapeHtml(a.entity_name);
+      const type = a.entity_type;
+      if (text.includes('#' + a.entity_id)) {
+        text = text.replace('#' + a.entity_id, name);
+      }
+    }
+    return escapeHtml(text);
   }
 </script>
 {% endblock %}
