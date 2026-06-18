@@ -1,0 +1,180 @@
+{% extends "resident/layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="breadcrumb">Resident Portal / <span>Dashboard</span></div>
+  </div>
+</div>
+
+<div class="stats-grid" id="residentStatCards">
+  <div class="stat-card"><div class="stat-icon yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="stat-info"><div class="stat-value" id="statPendingRequests">0</div><div class="stat-label">Pending Requests</div></div></div>
+  <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg></div><div class="stat-info"><div class="stat-value" id="statApprovedRequests">0</div><div class="stat-label">Approved</div></div></div>
+  <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l-2 0"/><path d="M13 15l4 0"/></svg></div><div class="stat-info"><div class="stat-value" id="statReleasedRequests">0</div><div class="stat-label">Released</div></div></div>
+  <div class="stat-card"><div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="stat-info"><div class="stat-value" id="statOpenComplaints">0</div><div class="stat-label">Open Complaints</div></div></div>
+</div>
+
+<div class="resident-dashboard-grid">
+  <div class="card">
+    <div class="card-header">
+      <h3>Recent Requests</h3>
+      <a href="/resident/requests" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Document</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="recentRequestsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Recent Complaints</h3>
+      <a href="/resident/complaints" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Complaint</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="recentComplaintsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="resident-dashboard-grid">
+  <div class="card">
+    <div class="card-header">
+      <h3>Upcoming Official Schedules</h3>
+      <a href="/resident/schedule" class="btn btn-sm btn-primary">View Calendar</a>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Official</th>
+            <th>Duty</th>
+            <th>Date</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="upcomingSchedulesBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Latest Announcements</h3>
+    </div>
+    <div id="latestAnnouncements" class="card-body"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  function pageReady() { loadResidentDashboard(); }
+
+  async function loadResidentDashboard() {
+    const data = await api('/api/resident-dashboard-stats');
+    if (!data) return;
+
+    document.getElementById('statPendingRequests').textContent = data.request_counts.pending;
+    document.getElementById('statApprovedRequests').textContent = data.request_counts.approved;
+    document.getElementById('statReleasedRequests').textContent = data.request_counts.released;
+    document.getElementById('statOpenComplaints').textContent = data.complaint_counts.open;
+
+    const tbody1 = document.getElementById('recentRequestsBody');
+    if (data.recent_requests?.length) {
+      tbody1.innerHTML = data.recent_requests.map(r => `<tr>
+        <td>${escapeHtml(r.document_type)}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>${formatDate(r.created_at)}</td>
+      </tr>`).join('');
+    } else {
+      tbody1.innerHTML = '<tr><td colspan="3" class="empty-state"><p>No requests yet</p></td></tr>';
+    }
+
+    const tbody2 = document.getElementById('recentComplaintsBody');
+    if (data.recent_complaints?.length) {
+      tbody2.innerHTML = data.recent_complaints.map(c => `<tr>
+        <td>${escapeHtml(c.complaint?.substring(0, 40))}${(c.complaint?.length > 40) ? '...' : ''}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td>${formatDate(c.created_at)}</td>
+      </tr>`).join('');
+    } else {
+      tbody2.innerHTML = '<tr><td colspan="3" class="empty-state"><p>No complaints filed</p></td></tr>';
+    }
+
+    const tbody3 = document.getElementById('upcomingSchedulesBody');
+    if (data.schedules?.length) {
+      tbody3.innerHTML = data.schedules.map(s => {
+        const dateStr = s.schedule_date ? formatDate(s.schedule_date) : (s.day_of_week !== null ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][s.day_of_week] : '—');
+        const timeStr = s.start_time && s.end_time ? formatTime(s.start_time) + ' — ' + formatTime(s.end_time) : '—';
+        return `<tr>
+          <td><strong>${escapeHtml(s.official_name)}</strong></td>
+          <td>${escapeHtml(s.duty_type)}</td>
+          <td>${dateStr}</td>
+          <td>${timeStr}</td>
+        </tr>`;
+      }).join('');
+    } else {
+      tbody3.innerHTML = '<tr><td colspan="4" class="empty-state"><p>No upcoming schedules</p></td></tr>';
+    }
+
+    const annDiv = document.getElementById('latestAnnouncements');
+    if (data.announcements?.length) {
+      annDiv.innerHTML = data.announcements.map(a => `<div class="announcement-mini">
+        <span class="ann-category ${(a.category || 'General').toLowerCase().replace(/ & /g,'-').replace(/\s+/g,'-')}">${a.category}</span>
+        <h4>${escapeHtml(a.title)}</h4>
+        <p>${escapeHtml(a.description)}</p>
+        <div class="ann-meta"><span>${formatDate(a.created_at)}</span></div>
+      </div>`).join('');
+    } else {
+      annDiv.innerHTML = '<p class="empty-state">No announcements</p>';
+    }
+  }
+
+  function statusBadge(status) {
+    const cls = {
+      'Pending': 'badge badge-warning',
+      'Approved': 'badge badge-primary',
+      'Released': 'badge badge-success',
+      'Denied': 'badge badge-danger',
+      'Ongoing': 'badge badge-info',
+      'Resolved': 'badge badge-success'
+    }[status] || 'badge';
+    return `<span class="${cls}">${status}</span>`;
+  }
+
+  function formatTime(t) {
+    if (!t) return '';
+    const parts = t.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parts[1] || '00';
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return h12 + ':' + m + ' ' + ampm;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '—';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+{% endblock %}

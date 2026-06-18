@@ -221,6 +221,12 @@ def admin_activity_log():
         return redirect(url_for('login_page'))
     return render_template('admin/activity_log.html', active_page='activity-log')
 
+@app.route('/resident/dashboard')
+def resident_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('resident/dashboard.html', active_page='dashboard')
+
 @app.route('/resident/home')
 def resident_home():
     if 'user_id' not in session:
@@ -551,6 +557,59 @@ def api_dashboard_stats():
         'age_counts': age_counts,
         'civil_status_labels': civil_status_labels,
         'civil_status_counts': civil_status_counts
+    })
+
+# ── Resident Dashboard API ────────────────────────────────────────
+
+@app.route('/api/resident-dashboard-stats')
+@login_required
+def api_resident_dashboard_stats():
+    uid = session['user_id']
+    user = query("SELECT u.*, r.id as rid, r.full_name, r.birthdate, r.sex, r.civil_status, r.contact_number, r.email FROM users u JOIN residents r ON u.resident_id = r.id WHERE u.id = ?", [uid], one=True)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    rid = user['rid']
+
+    pending_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Pending'", [rid], one=True)['c']
+    approved_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Approved'", [rid], one=True)['c']
+    released_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Released'", [rid], one=True)['c']
+    denied_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Denied'", [rid], one=True)['c']
+
+    open_complaints = query("SELECT COUNT(*) as c FROM blotter WHERE complainant_id = ? AND status IN ('Pending','Ongoing')", [rid], one=True)['c']
+    resolved_complaints = query("SELECT COUNT(*) as c FROM blotter WHERE complainant_id = ? AND status = 'Resolved'", [rid], one=True)['c']
+
+    recent_requests = query("SELECT id, document_type, status, created_at FROM document_requests WHERE resident_id = ? ORDER BY created_at DESC LIMIT 5", [rid])
+    recent_complaints = query("SELECT id, complaint, respondent_name, status, created_at FROM blotter WHERE complainant_id = ? ORDER BY created_at DESC LIMIT 5", [rid])
+
+    announcements = query("SELECT * FROM announcements ORDER BY created_at DESC LIMIT 3")
+
+    schedules = query("""
+        SELECT s.*, r.full_name as official_name
+        FROM schedules s
+        JOIN users u ON s.user_id = u.id
+        JOIN residents r ON u.resident_id = r.id
+        WHERE s.schedule_date >= date('now')
+        ORDER BY s.schedule_date ASC, s.start_time ASC LIMIT 5
+    """)
+
+    return jsonify({
+        'user': dict_row(user),
+        'request_counts': {
+            'pending': pending_reqs,
+            'approved': approved_reqs,
+            'released': released_reqs,
+            'denied': denied_reqs,
+            'total': pending_reqs + approved_reqs + released_reqs + denied_reqs
+        },
+        'complaint_counts': {
+            'open': open_complaints,
+            'resolved': resolved_complaints,
+            'total': open_complaints + resolved_complaints
+        },
+        'recent_requests': [dict_row(r) for r in recent_requests],
+        'recent_complaints': [dict_row(r) for r in recent_complaints],
+        'announcements': [dict_row(a) for a in announcements],
+        'schedules': [dict_row(s) for s in schedules]
     })
 
 # ── Residents API ─────────────────────────────────────────────────

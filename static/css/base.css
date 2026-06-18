@@ -297,6 +297,12 @@ table td:last-child { text-align: right; }
 .badge-resolved { background: #e8f5e9; color: #2e7d32; }
 .badge-dismissed { background: #f3e5f5; color: #7b1fa2; }
 
+.badge-success { background: #e8f5e9; color: #2e7d32; }
+.badge-primary { background: #e3f2fd; color: #1976d2; }
+.badge-warning { background: #fff8e1; color: #f5a623; }
+.badge-danger { background: #ffebee; color: #c62828; }
+.badge-info { background: #e3f2fd; color: #0288d1; }
+
 /* ── Modal ────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
