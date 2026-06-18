@@ -76,7 +76,7 @@
             const color = DUTY_COLORS[s.duty_type] || '#6b7280';
             html += `<span class="cal-slot-pill" style="background:${color}18;color:${color}">
               <span class="cal-slot-dot" style="background:${color}"></span>
-              ${escapeHtml(s.full_name.split(' ')[0])} ${s.start_time}
+              ${escapeHtml(s.full_name.split(' ')[0])} ${formatTime(s.start_time)}
             </span>`;
           });
           if (slots.length > 3) html += `<span class="cal-more">+${slots.length - 3} more</span>`;
@@ -112,7 +112,7 @@
         `<div class="detail-item">
           <div class="detail-info">
             <strong>${escapeHtml(s.full_name)}</strong>
-            <small>${s.start_time} — ${s.end_time}</small>
+            <small>${formatTime(s.start_time)} — ${formatTime(s.end_time)}</small>
           </div>
           <span class="badge badge-info">${escapeHtml(s.duty_type)}</span>
         </div>`
@@ -130,6 +130,14 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function formatTime(t) {
+    if (!t) return '';
+    const [h, m] = t.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2,'0')}:${String(m).padStart(2,'0')} ${ampm}`;
   }
 </script>
 {% endblock %}
