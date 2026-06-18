@@ -207,6 +207,12 @@ def admin_announcements():
         return redirect(url_for('login_page'))
     return render_template('admin/announcements.html', active_page='announcements')
 
+@app.route('/admin/activity-log')
+def admin_activity_log():
+    if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
+        return redirect(url_for('login_page'))
+    return render_template('admin/activity_log.html', active_page='activity-log')
+
 @app.route('/resident/home')
 def resident_home():
     if 'user_id' not in session:
@@ -394,6 +400,32 @@ def api_export(entity):
         }
     )
 
+# ── Activity Log API ─────────────────────────────────────────────
+
+@app.route('/api/activity-log')
+@admin_required
+def api_activity_log():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    action_filter = request.args.get('action', '')
+
+    where = ''
+    params = []
+    if action_filter:
+        where = " WHERE action = ?"
+        params.append(action_filter)
+
+    count = query(f"SELECT COUNT(*) as c FROM activity_log{where}", params, one=True)['c']
+    offset = (page - 1) * per_page
+    rows = query(f"SELECT * FROM activity_log{where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params + [per_page, offset])
+    return jsonify({
+        'rows': [dict_row(r) for r in rows],
+        'total': count,
+        'page': page,
+        'per_page': per_page,
+        'total_pages': max(1, (count + per_page - 1) // per_page)
+    })
+
 # ── Dashboard Stats API ───────────────────────────────────────────
 
 @app.route('/api/dashboard-stats')
@@ -438,6 +470,23 @@ def api_dashboard_stats():
         act_rows = query("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 10")
     recent_activity = [dict_row(r) for r in act_rows]
 
+    # Age distribution
+    age_data = query("SELECT birthdate FROM residents")
+    age_labels = ['0-17', '18-30', '31-45', '46-60', '60+']
+    age_counts = [0, 0, 0, 0, 0]
+    for r in age_data:
+        age = compute_age(r['birthdate'])
+        if age < 18: age_counts[0] += 1
+        elif age <= 30: age_counts[1] += 1
+        elif age <= 45: age_counts[2] += 1
+        elif age <= 60: age_counts[3] += 1
+        else: age_counts[4] += 1
+
+    # Civil status distribution
+    civil_data = query("SELECT civil_status, COUNT(*) as count FROM residents GROUP BY civil_status")
+    civil_status_labels = [r['civil_status'] for r in civil_data]
+    civil_status_counts = [r['count'] for r in civil_data]
+
     return jsonify({
         'total_residents': total_residents,
         'total_households': total_households,
@@ -446,7 +495,11 @@ def api_dashboard_stats():
         'monthly_requests': monthly_data,
         'status_distribution': status_data,
         'blotter_status': blotter_data,
-        'recent_activity': recent_activity
+        'recent_activity': recent_activity,
+        'age_labels': age_labels,
+        'age_counts': age_counts,
+        'civil_status_labels': civil_status_labels,
+        'civil_status_counts': civil_status_counts
     })
 
 # ── Residents API ─────────────────────────────────────────────────
@@ -458,20 +511,31 @@ def api_residents():
     if request.method == 'GET':
         search = request.args.get('search', '')
         household_id = request.args.get('household_id', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
         params = []
-        sql = "SELECT r.*, h.household_code, h.address as household_address FROM residents r LEFT JOIN households h ON r.household_id = h.id WHERE 1=1"
+        where = "WHERE 1=1"
         if search:
-            sql += " AND r.full_name LIKE ?"
+            where += " AND r.full_name LIKE ?"
             params.append(f'%{search}%')
         if household_id:
-            sql += " AND r.household_id = ?"
+            where += " AND r.household_id = ?"
             params.append(household_id)
-        sql += " ORDER BY r.full_name"
-        rows = query(sql, params)
+
+        count = query(f"SELECT COUNT(*) as c FROM residents r {where}", params[:], one=True)['c']
+        offset = (page - 1) * per_page
+        sql = f"SELECT r.*, h.household_code, h.address as household_address FROM residents r LEFT JOIN households h ON r.household_id = h.id {where} ORDER BY r.full_name LIMIT ? OFFSET ?"
+        rows = query(sql, params + [per_page, offset])
         result = [dict_row(r) for r in rows]
         for r in result:
             r['age'] = compute_age(r['birthdate'])
-        return jsonify(result)
+        return jsonify({
+            'rows': result,
+            'total': count,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': max(1, (count + per_page - 1) // per_page)
+        })
 
     data = request.get_json()
     password = data.get('password', '')
@@ -534,19 +598,33 @@ def api_resident(rid):
 def api_households():
     if request.method == 'GET':
         search = request.args.get('search', '')
-        sql = """
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+
+        where = ""
+        params = []
+        if search:
+            where = " WHERE h.household_code LIKE ? OR h.address LIKE ?"
+            params.extend([f'%{search}%', f'%{search}%'])
+
+        count = query(f"SELECT COUNT(*) as c FROM households h{where}", params[:], one=True)['c']
+        offset = (page - 1) * per_page
+        sql = f"""
             SELECT h.*, r.full_name as head_name,
                 (SELECT COUNT(*) FROM residents WHERE household_id = h.id) as member_count
             FROM households h
             LEFT JOIN residents r ON h.head_resident_id = r.id
+            {where}
+            ORDER BY h.household_code LIMIT ? OFFSET ?
         """
-        params = []
-        if search:
-            sql += " WHERE h.household_code LIKE ? OR h.address LIKE ?"
-            params.extend([f'%{search}%', f'%{search}%'])
-        sql += " ORDER BY h.household_code"
-        rows = query(sql, params)
-        return jsonify([dict_row(r) for r in rows])
+        rows = query(sql, params + [per_page, offset])
+        return jsonify({
+            'rows': [dict_row(r) for r in rows],
+            'total': count,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': max(1, (count + per_page - 1) // per_page)
+        })
 
     data = request.get_json()
     hid = query(
@@ -656,25 +734,40 @@ def api_my_household_add_member():
 def api_requests():
     if request.method == 'GET':
         resident_id = request.args.get('resident_id', '')
-        sql = """
+        status_filter = request.args.get('status', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+
+        where = ""
+        params = []
+        if resident_id:
+            where += " AND d.resident_id = ?"
+            params.append(resident_id)
+        if status_filter:
+            where += " AND d.status = ?"
+            params.append(status_filter)
+        if session.get('role') != 'admin' and session.get('role') != 'staff':
+            where += " AND d.resident_id = ?"
+            params.append(session.get('resident_id'))
+
+        count = query(f"SELECT COUNT(*) as c FROM document_requests d WHERE 1=1{where}", params[:], one=True)['c']
+        offset = (page - 1) * per_page
+        sql = f"""
             SELECT d.*, r.full_name as resident_name, h.address
             FROM document_requests d
             JOIN residents r ON d.resident_id = r.id
             LEFT JOIN households h ON r.household_id = h.id
-            WHERE 1=1
+            WHERE 1=1{where}
+            ORDER BY d.date_requested DESC LIMIT ? OFFSET ?
         """
-        params = []
-        if resident_id:
-            sql += " AND d.resident_id = ?"
-            params.append(resident_id)
-        if session.get('role') in ('admin', 'staff') and not resident_id:
-            pass
-        else:
-            sql += " AND d.resident_id = ?"
-            params.append(session.get('resident_id'))
-        sql += " ORDER BY d.date_requested DESC"
-        rows = query(sql, params)
-        return jsonify([dict_row(r) for r in rows])
+        rows = query(sql, params + [per_page, offset])
+        return jsonify({
+            'rows': [dict_row(r) for r in rows],
+            'total': count,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': max(1, (count + per_page - 1) // per_page)
+        })
 
     data = request.get_json()
     resident_id = session.get('resident_id') if session.get('role') == 'resident' else data.get('resident_id')
@@ -708,19 +801,36 @@ def api_update_request(rid):
 @csrf_required
 def api_blotter():
     if request.method == 'GET':
-        sql = """
+        status = request.args.get('status', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+
+        where = ""
+        params = []
+        if session.get('role') == 'resident':
+            where += " AND b.complainant_id = ?"
+            params.append(session.get('resident_id'))
+        if status:
+            where += " AND b.status = ?"
+            params.append(status)
+
+        count = query(f"SELECT COUNT(*) as c FROM blotter b WHERE 1=1{where}", params[:], one=True)['c']
+        offset = (page - 1) * per_page
+        sql = f"""
             SELECT b.*, r.full_name as complainant_name, r.contact_number as complainant_contact
             FROM blotter b
             JOIN residents r ON b.complainant_id = r.id
-            WHERE 1=1
+            WHERE 1=1{where}
+            ORDER BY b.date_filed DESC LIMIT ? OFFSET ?
         """
-        params = []
-        if session.get('role') == 'resident':
-            sql += " AND b.complainant_id = ?"
-            params.append(session.get('resident_id'))
-        sql += " ORDER BY b.date_filed DESC"
-        rows = query(sql, params)
-        return jsonify([dict_row(r) for r in rows])
+        rows = query(sql, params + [per_page, offset])
+        return jsonify({
+            'rows': [dict_row(r) for r in rows],
+            'total': count,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': max(1, (count + per_page - 1) // per_page)
+        })
 
     data = request.get_json()
     complainant_id = session.get('resident_id') if session.get('role') == 'resident' else data.get('complainant_id')
@@ -818,6 +928,186 @@ def print_blotter(bid):
     if not b:
         return jsonify({'error': 'Not found'}), 404
     return render_template('shared/blotter_report.html', data=dict_row(b))
+
+# ── Notifications API ─────────────────────────────────────────────
+
+def notify(user_id, title, message, type='info', link=None):
+    try:
+        query(
+            "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+            [user_id, title, message, type, link]
+        )
+    except Exception:
+        pass
+
+@app.route('/api/notifications')
+@login_required
+def api_notifications():
+    user_id = session['user_id']
+    rows = query(
+        "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 20",
+        [user_id]
+    )
+    unread = query(
+        "SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND is_read = 0",
+        [user_id], one=True
+    )['c']
+    return jsonify({
+        'rows': [dict_row(r) for r in rows],
+        'unread_count': unread
+    })
+
+@app.route('/api/notifications/read', methods=['POST'])
+@login_required
+@csrf_required
+def api_notifications_read():
+    query("UPDATE notifications SET is_read = 1 WHERE user_id = ?", [session['user_id']])
+    return jsonify({'success': True})
+
+# ── Barangay ID Print ─────────────────────────────────────────────
+
+@app.route('/api/print/barangay-id/<int:rid>')
+@login_required
+def print_barangay_id(rid):
+    r = query("""
+        SELECT r.*, h.household_code, h.address as household_address,
+               u.username
+        FROM residents r
+        LEFT JOIN households h ON r.household_id = h.id
+        LEFT JOIN users u ON u.resident_id = r.id
+        WHERE r.id = ?
+    """, [rid], one=True)
+    if not r:
+        return jsonify({'error': 'Not found'}), 404
+    return render_template('shared/barangay_id.html', data=dict_row(r))
+
+# ── Bulk CSV Import ────────────────────────────────────────────────
+
+@app.route('/api/import/residents', methods=['POST'])
+@admin_required
+@csrf_required
+def api_import_residents():
+    import csv
+    from io import StringIO
+
+    file = request.files.get('file')
+    if not file:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    content = file.read().decode('utf-8-sig')
+    reader = csv.DictReader(StringIO(content))
+    imported = 0
+    errors = []
+
+    for i, row in enumerate(reader, start=1):
+        try:
+            full_name = row.get('full_name', '').strip()
+            birthdate = row.get('birthdate', '').strip()
+            sex = row.get('sex', 'Male')
+            civil_status = row.get('civil_status', 'Single')
+            if not full_name or not birthdate:
+                errors.append(f"Row {i}: full_name and birthdate are required")
+                continue
+            if sex not in ('Male', 'Female'):
+                sex = 'Male'
+            if civil_status not in ('Single', 'Married', 'Widowed', 'Divorced', 'Separated'):
+                civil_status = 'Single'
+
+            rid = query(
+                "INSERT INTO residents (full_name, birthdate, sex, civil_status, contact_number, email, voter_status) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                [full_name, birthdate, sex, civil_status,
+                 row.get('contact_number', '').strip(),
+                 row.get('email', '').strip(),
+                 int(row.get('voter_status', 0))]
+            )
+            log_activity('create', 'resident', rid, f"Bulk imported: {full_name}")
+            imported += 1
+        except Exception as e:
+            errors.append(f"Row {i}: {str(e)}")
+
+    return jsonify({
+        'success': True,
+        'imported': imported,
+        'errors': errors
+    })
+
+# ── Database Backup & Restore ──────────────────────────────────────
+
+@app.route('/api/backup')
+@admin_required
+def api_backup():
+    backup_path = DATABASE + '.backup'
+    try:
+        conn = sqlite3.connect(DATABASE)
+        bconn = sqlite3.connect(backup_path)
+        conn.backup(bconn)
+        bconn.close()
+        conn.close()
+        log_activity('export', 'database', details='Database backup created')
+        return send_file(backup_path, as_attachment=True, download_name=f'barangay_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.db')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/restore', methods=['POST'])
+@admin_required
+@csrf_required
+def api_restore():
+    file = request.files.get('file')
+    if not file:
+        return jsonify({'error': 'No file uploaded'}), 400
+    try:
+        file.save(DATABASE + '.restored')
+        log_activity('import', 'database', details='Database restored from backup')
+        return jsonify({'success': True, 'message': 'Database restored. Please restart the application.'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ── Two-Factor Authentication ──────────────────────────────────────
+
+# In-memory store for 2FA codes (email -> code, expiry)
+_otp_store = {}
+
+def send_otp_email(email, code):
+    # Placeholder — in production, integrate with SMTP / SendGrid / etc.
+    print(f"[OTP] To: {email}, Code: {code}")
+    return True
+
+@app.route('/api/2fa/send', methods=['POST'])
+@login_required
+def api_2fa_send():
+    user_id = session['user_id']
+    user = query("SELECT id, username FROM users WHERE id = ?", [user_id], one=True)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    resident = query("SELECT email FROM residents WHERE id = (SELECT resident_id FROM users WHERE id = ?)", [user_id], one=True)
+    email = (resident['email'] if resident and resident.get('email') else None) or f"{user['username']}@barangay779.local"
+
+    code = str(secrets.randbelow(900000) + 100000)
+    _otp_store[user_id] = {'code': code, 'expiry': time.time() + 300}
+
+    send_otp_email(email, code)
+    return jsonify({'success': True, 'message': f'OTP sent to {email}' if '@barangay779.local' not in email else 'OTP sent (check server console)'})
+
+@app.route('/api/2fa/verify', methods=['POST'])
+@login_required
+@csrf_required
+def api_2fa_verify():
+    data = request.get_json()
+    user_id = session['user_id']
+    stored = _otp_store.get(user_id)
+    if not stored:
+        return jsonify({'error': 'No OTP requested. Please request a new code.'}), 400
+    if time.time() > stored['expiry']:
+        _otp_store.pop(user_id, None)
+        return jsonify({'error': 'OTP has expired. Please request a new code.'}), 400
+    if data.get('code') != stored['code']:
+        return jsonify({'error': 'Invalid OTP code'}), 403
+
+    _otp_store.pop(user_id, None)
+    session['2fa_verified'] = True
+    return jsonify({'success': True})
 
 # ── Template Filters ─────────────────────────────────────────────
 

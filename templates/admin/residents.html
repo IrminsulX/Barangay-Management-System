@@ -24,7 +24,7 @@
     <div class="card-actions">
       <div class="search-wrapper">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search residents..." oninput="loadResidents()">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search residents..." oninput="loadResidents(1)">
       </div>
     </div>
   </div>
@@ -131,10 +131,14 @@
     <div class="modal-body" id="detailBody"></div>
   </div>
 </div>
+
+<div class="pagination" id="residentsPagination"></div>
 {% endblock %}
 {% block scripts %}
 <script>
-  function pageReady() { loadHouseholdSelect(); loadResidents(); }
+  let currentPage = 1;
+
+  function pageReady() { loadHouseholdSelect(); loadResidents(1); }
 
   async function loadHouseholdSelect() {
     const hh = await api('/api/households') || [];
@@ -144,15 +148,18 @@
     ).join('');
   }
 
-  async function loadResidents() {
+  async function loadResidents(page) {
+    currentPage = page || 1;
     const search = document.getElementById('searchInput').value;
-    const data = await api(`/api/residents?search=${encodeURIComponent(search)}`) || [];
+    const data = await api(`/api/residents?search=${encodeURIComponent(search)}&page=${currentPage}`) || {};
+    const rows = data.rows || [];
     const tbody = document.getElementById('residentsBody');
-    if (!data.length) {
+    if (!rows.length) {
       tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><p>No residents found</p></div></td></tr>';
+      document.getElementById('residentsPagination').innerHTML = '';
       return;
     }
-    tbody.innerHTML = data.map(r => `<tr>
+    tbody.innerHTML = rows.map(r => `<tr>
       <td><strong>${r.full_name}</strong></td>
       <td>${formatDate(r.birthdate)}</td>
       <td>${r.age}</td>
@@ -167,6 +174,7 @@
         <button class="btn btn-sm btn-danger" onclick="deleteResident(${r.id})">Del</button>
       </td>
     </tr>`).join('');
+    renderPagination('residentsPagination', data.page, data.total_pages, loadResidents);
   }
 
   function openResidentModal() {
@@ -232,10 +240,11 @@
   }
 
   async function deleteResident(id) {
-    if (!confirm('Delete this resident record?')) return;
-    await api(`/api/residents/${id}`, { method: 'DELETE' });
-    showToast('Resident deleted');
-    loadResidents();
+    showConfirm('This will permanently delete this resident record and any associated user account. Are you sure?', async function() {
+      await api(`/api/residents/${id}`, { method: 'DELETE' });
+      showToast('Resident deleted');
+      loadResidents(currentPage);
+    }, { title: 'Delete Resident?', confirmText: 'Yes, delete', variant: 'danger' });
   }
 
   async function viewResident(id) {

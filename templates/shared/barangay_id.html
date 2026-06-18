@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Barangay ID — {{ data.full_name }}</title>
+  <style>
+    @page { margin: 0; size: 86mm 54mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f0f2f5;
+    }
+    .id-card {
+      width: 324px;
+      height: 204px;
+      background: linear-gradient(135deg, #1a3a5c 0%, #2a5a8c 100%);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      color: white;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .id-card::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .id-card::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: -20px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    .id-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .id-seal {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(200,164,78,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .id-title h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+    .id-title small { font-size: 8px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+    .id-body { display: flex; gap: 14px; align-items: center; position: relative; z-index: 1; }
+    .id-photo {
+      width: 60px;
+      height: 70px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .id-details { flex: 1; }
+    .id-details .name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .id-details .field { display: flex; justify-content: space-between; font-size: 8px; padding: 1px 0; opacity: 0.85; }
+    .id-details .field span:first-child { text-transform: uppercase; letter-spacing: 0.3px; }
+    .id-details .field span:last-child { font-weight: 600; }
+    .id-footer {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7px;
+      opacity: 0.6;
+      position: relative;
+      z-index: 1;
+    }
+    .id-footer .qr-placeholder {
+      width: 28px;
+      height: 28px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 6px;
+    }
+    @media print {
+      body { background: none; }
+      .id-card { box-shadow: none; break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="id-card">
+    <div class="id-header">
+      <div class="id-seal">779</div>
+      <div class="id-title">
+        <h3>BARANGAY 779</h3>
+        <small>Barangay ID Card</small>
+      </div>
+    </div>
+    <div class="id-body">
+      <div class="id-photo">{{ data.full_name[:1] }}</div>
+      <div class="id-details">
+        <div class="name">{{ data.full_name }}</div>
+        <div class="field"><span>Sex</span><span>{{ data.sex }}</span></div>
+        <div class="field"><span>Birthdate</span><span>{{ data.birthdate }}</span></div>
+        <div class="field"><span>Civil Status</span><span>{{ data.civil_status }}</span></div>
+        <div class="field"><span>Household</span><span>{{ data.household_code or '—' }}</span></div>
+        <div class="field"><span>Address</span><span>{{ data.household_address or '—' }}</span></div>
+      </div>
+    </div>
+    <div class="id-footer">
+      <span>ID: BRGY-{{ '%04d' % data.id }}</span>
+      <span>Issued: {{ data.created_at[:10] if data.created_at else '' }}</span>
+      <div class="qr-placeholder">QR</div>
+    </div>
+  </div>
+  <script>window.print();</script>
+</body>
+</html>

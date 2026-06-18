@@ -1,0 +1,93 @@
+{% extends "admin/layout.html" %}
+{% block title %}Activity Log{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Activity Log</h1>
+    <div class="breadcrumb">Admin / <span>Activity Log</span></div>
+  </div>
+  <div class="page-header-actions">
+    <select id="actionFilter" class="filter-select" onchange="loadActivity(1)">
+      <option value="">All Actions</option>
+      <option value="create">Create</option>
+      <option value="update">Update</option>
+      <option value="delete">Delete</option>
+      <option value="export">Export</option>
+    </select>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3>Audit Trail</h3>
+  </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Entity</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody id="activityBody"></tbody>
+    </table>
+  </div>
+  <div class="pagination" id="activityPagination"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let currentPage = 1;
+
+  function pageReady() { loadActivity(1); }
+
+  async function loadActivity(page) {
+    currentPage = page;
+    const filter = document.getElementById('actionFilter').value;
+    const params = new URLSearchParams({ page, per_page: 20 });
+    if (filter) params.append('action', filter);
+
+    showSkeleton('activityBody', 5, 5);
+    const data = await api('/api/activity-log?' + params.toString());
+    if (!data) return;
+
+    const tbody = document.getElementById('activityBody');
+    tbody.innerHTML = '';
+    if (data.rows?.length) {
+      data.rows.forEach(a => {
+        tbody.innerHTML += `<tr>
+          <td>${formatDateTime(a.created_at)}</td>
+          <td>${escapeHtml(a.username)}</td>
+          <td>${actionBadge(a.action)}</td>
+          <td>${escapeHtml(a.entity_type)} #${a.entity_id || ''}</td>
+          <td>${escapeHtml(a.details || '')}</td>
+        </tr>`;
+      });
+    } else {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>No activity recorded</p></td></tr>';
+    }
+
+    renderPagination('activityPagination', data.page, data.total_pages, loadActivity);
+  }
+
+  function actionBadge(action) {
+    const cls = {
+      'create': 'badge badge-success',
+      'update': 'badge badge-primary',
+      'delete': 'badge badge-danger',
+      'export': 'badge badge-warning'
+    }[action] || 'badge';
+    return `<span class="${cls}">${escapeHtml(action)}</span>`;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '—';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+{% endblock %}

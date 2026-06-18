@@ -16,7 +16,7 @@
   <div class="card-header">
     <h3>All Blotter Entries</h3>
     <div class="card-actions">
-      <select id="statusFilter" onchange="loadBlotter()" class="filter-select">
+      <select id="statusFilter" onchange="loadBlotter(1)" class="filter-select">
         <option value="">All Status</option>
         <option value="Filed">Filed</option>
         <option value="Under Investigation">Under Investigation</option>
@@ -41,6 +41,7 @@
       <tbody id="blotterBody"></tbody>
     </table>
   </div>
+  <div class="pagination" id="blotterPagination"></div>
 </div>
 
 <div class="modal-overlay" id="statusModal">
@@ -74,18 +75,20 @@
 {% endblock %}
 {% block scripts %}
 <script>
-  function pageReady() { loadBlotter(); }
+  let currentPage = 1;
+  function pageReady() { loadBlotter(1); }
 
-  async function loadBlotter() {
+  async function loadBlotter(page) {
     const statusFilter = document.getElementById('statusFilter').value;
-    const data = await api('/api/blotter') || [];
+    currentPage = page;
+    const data = await api(`/api/blotter?status=${statusFilter}&page=${currentPage}`);
     const tbody = document.getElementById('blotterBody');
-    const filtered = statusFilter ? data.filter(b => b.status === statusFilter) : data;
-    if (!filtered.length) {
+    if (!data.rows.length) {
       tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><p>No blotter entries found</p></div></td></tr>';
+      renderPagination('blotterPagination', 1, 1, loadBlotter);
       return;
     }
-    tbody.innerHTML = filtered.map(b => `<tr>
+    tbody.innerHTML = data.rows.map(b => `<tr>
       <td><span class="case-number">#${b.id}</span></td>
       <td><strong>${b.complainant_name}</strong></td>
       <td>${b.respondent_name}</td>
@@ -105,6 +108,7 @@
         openModal('statusModal');
       });
     });
+    renderPagination('blotterPagination', data.page, data.total_pages, loadBlotter);
   }
 
   async function updateBlotter() {

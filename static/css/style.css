@@ -22,6 +22,28 @@
   --shadow: 0 2px 8px rgba(0,0,0,0.08);
   --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
   --transition: all 0.2s ease;
+  --skeleton-base: #e9ecef;
+  --skeleton-shine: #f8f9fa;
+  --toast-bg: #fff;
+}
+
+[data-theme="dark"] {
+  --primary: #2a5a8c;
+  --primary-light: #4a7aac;
+  --primary-dark: #0d2038;
+  --secondary: #c8a44e;
+  --secondary-light: #e0c070;
+  --bg: #0f1419;
+  --card-bg: #1a2332;
+  --text: #e4e8ed;
+  --text-light: #9ba3b0;
+  --text-muted: #6b7280;
+  --border: #2d3748;
+  --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.4);
+  --skeleton-base: #2d3748;
+  --skeleton-shine: #3a4556;
+  --toast-bg: #1a2332;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -971,6 +993,234 @@ table .actions {
 
 .member-list {
   margin-top: 4px;
+}
+
+/* ── Skeleton Loading ──────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, var(--skeleton-base) 25%, var(--skeleton-shine) 50%, var(--skeleton-base) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-text { height: 14px; width: 100%; margin-bottom: 8px; }
+.skeleton-text-sm { height: 10px; width: 60%; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.skeleton-thumb { width: 60px; height: 60px; border-radius: 8px; }
+.skeleton-btn { height: 36px; width: 80px; border-radius: 8px; }
+
+.skeleton-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.skeleton-row .skeleton-text { flex: 1; }
+
+/* ── Confirm Dialog ────────────────────────────────────────── */
+.confirm-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 5000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.confirm-overlay.show { display: flex; }
+
+.confirm-dialog {
+  background: var(--card-bg);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+  animation: modalIn 0.2s ease;
+  overflow: hidden;
+}
+
+.confirm-header {
+  padding: 24px 24px 0;
+  text-align: center;
+}
+
+.confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 24px;
+}
+
+.confirm-icon.warning {
+  background: #fff8e1;
+  color: #f5a623;
+}
+
+.confirm-icon.danger {
+  background: #ffebee;
+  color: var(--accent);
+}
+
+.confirm-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.confirm-message {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  padding: 20px 24px;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* ── Password Strength Meter ────────────────────────────────── */
+.password-strength {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.password-strength .strength-bar {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.password-strength .strength-bar.active.weak { background: var(--accent); }
+.password-strength .strength-bar.active.medium { background: var(--warning); }
+.password-strength .strength-bar.active.strong { background: var(--success); }
+
+.strength-text {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.strength-text.weak { color: var(--accent); }
+.strength-text.medium { color: #f5a623; }
+.strength-text.strong { color: var(--success); }
+
+/* ── Inline Form Validation ────────────────────────────────── */
+.field-error {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 4px;
+  display: none;
+}
+
+.field-error.show { display: block; }
+
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(217,83,79,0.1);
+}
+
+.form-group.has-success input {
+  border-color: var(--success);
+  box-shadow: 0 0 0 3px rgba(40,167,69,0.1);
+}
+
+/* ── Pagination ────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+
+.pagination .page-btn {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.pagination .page-btn:hover:not(.active):not(:disabled) {
+  border-color: var(--primary-light);
+  color: var(--primary-light);
+}
+
+.pagination .page-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.pagination .page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination .page-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 8px;
+}
+
+/* ── Dark Mode Toggle ──────────────────────────────────────── */
+.theme-toggle {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle:hover {
+  color: white;
+  background: rgba(255,255,255,0.08);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* ── Toast ─────────────────────────────────────────── */

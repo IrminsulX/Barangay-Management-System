@@ -24,7 +24,7 @@
     <div class="card-actions">
       <div class="search-wrapper">
         <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" class="search-input" id="searchInput" placeholder="Search households..." oninput="loadHouseholds()">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search households..." oninput="loadHouseholds(1)">
       </div>
     </div>
   </div>
@@ -136,20 +136,23 @@
     <div class="modal-body" id="detailBody"></div>
   </div>
 </div>
+<div class="pagination" id="householdsPagination"></div>
 {% endblock %}
 {% block scripts %}
 <script>
-  function pageReady() { loadHouseholds(); }
+  let currentPage = 1;
+  function pageReady() { loadHouseholds(1); }
 
-  async function loadHouseholds() {
+  async function loadHouseholds(page) {
+    currentPage = page || 1;
     const search = document.getElementById('searchInput').value;
-    const data = await api(`/api/households?search=${encodeURIComponent(search)}`) || [];
+    const data = await api(`/api/households?page=${page}&search=${encodeURIComponent(search)}`) || [];
     const tbody = document.getElementById('householdsBody');
-    if (!data.length) {
+    if (!data.rows || !data.rows.length) {
       tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No households found</p></div></td></tr>';
       return;
     }
-    tbody.innerHTML = data.map(h => `<tr>
+    tbody.innerHTML = data.rows.map(h => `<tr>
       <td><strong>${h.household_code}</strong></td>
       <td>${h.address}</td>
       <td>${h.head_name || '—'}</td>
@@ -160,6 +163,7 @@
         <button class="btn btn-sm btn-danger" onclick="deleteHousehold(${h.id})">Del</button>
       </td>
     </tr>`).join('');
+    renderPagination('householdsPagination', data.page, data.total_pages, loadHouseholds);
   }
 
   function openHouseholdModal() {
@@ -267,14 +271,15 @@
       showToast('Household added');
     }
     closeModal('householdModal');
-    loadHouseholds();
+    loadHouseholds(1);
   }
 
   async function deleteHousehold(id) {
-    if (!confirm('Delete this household?')) return;
-    await api(`/api/households/${id}`, { method: 'DELETE' });
-    showToast('Household deleted');
-    loadHouseholds();
+    showConfirm('Are you sure you want to delete this household?', async function() {
+      await api(`/api/households/${id}`, { method: 'DELETE' });
+      showToast('Household deleted');
+      loadHouseholds(currentPage);
+    }, { title: 'Delete Household?', confirmText: 'Yes, delete', variant: 'danger' });
   }
 
   async function viewHousehold(id) {
