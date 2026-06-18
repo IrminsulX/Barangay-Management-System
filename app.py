@@ -571,15 +571,15 @@ def api_resident_dashboard_stats():
     rid = user['rid']
 
     pending_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Pending'", [rid], one=True)['c']
-    approved_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Approved'", [rid], one=True)['c']
+    processing_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status IN ('Processing','Ready')", [rid], one=True)['c']
     released_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Released'", [rid], one=True)['c']
-    denied_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Denied'", [rid], one=True)['c']
+    denied_reqs = query("SELECT COUNT(*) as c FROM document_requests WHERE resident_id = ? AND status = 'Rejected'", [rid], one=True)['c']
 
-    open_complaints = query("SELECT COUNT(*) as c FROM blotter WHERE complainant_id = ? AND status IN ('Pending','Ongoing')", [rid], one=True)['c']
+    open_complaints = query("SELECT COUNT(*) as c FROM blotter WHERE complainant_id = ? AND status IN ('Filed','Under Investigation')", [rid], one=True)['c']
     resolved_complaints = query("SELECT COUNT(*) as c FROM blotter WHERE complainant_id = ? AND status = 'Resolved'", [rid], one=True)['c']
 
-    recent_requests = query("SELECT id, document_type, status, created_at FROM document_requests WHERE resident_id = ? ORDER BY created_at DESC LIMIT 5", [rid])
-    recent_complaints = query("SELECT id, complaint, respondent_name, status, created_at FROM blotter WHERE complainant_id = ? ORDER BY created_at DESC LIMIT 5", [rid])
+    recent_requests = query("SELECT id, document_type, status, date_requested as created_at FROM document_requests WHERE resident_id = ? ORDER BY date_requested DESC LIMIT 5", [rid])
+    recent_complaints = query("SELECT id, incident_details, respondent_name, status, date_filed as created_at FROM blotter WHERE complainant_id = ? ORDER BY date_filed DESC LIMIT 5", [rid])
 
     announcements = query("SELECT * FROM announcements ORDER BY created_at DESC LIMIT 3")
 
@@ -596,10 +596,10 @@ def api_resident_dashboard_stats():
         'user': dict_row(user),
         'request_counts': {
             'pending': pending_reqs,
-            'approved': approved_reqs,
+            'processing': processing_reqs,
             'released': released_reqs,
             'denied': denied_reqs,
-            'total': pending_reqs + approved_reqs + released_reqs + denied_reqs
+            'total': pending_reqs + processing_reqs + released_reqs + denied_reqs
         },
         'complaint_counts': {
             'open': open_complaints,

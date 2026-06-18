@@ -302,6 +302,7 @@ table td:last-child { text-align: right; }
 .badge-warning { background: #fff8e1; color: #f5a623; }
 .badge-danger { background: #ffebee; color: #c62828; }
 .badge-info { background: #e3f2fd; color: #0288d1; }
+.badge-secondary { background: #f3e5f5; color: #7b1fa2; }
 
 /* ── Modal ────────────────────────────────────────── */
 .modal-overlay {
