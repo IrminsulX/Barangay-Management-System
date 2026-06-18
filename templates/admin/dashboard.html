@@ -199,16 +199,42 @@
     if (data.recent_activity?.length) {
       data.recent_activity.forEach(a => {
         tbody.innerHTML += `<tr>
-          <td>${formatDate(a.created_at || a.date)}</td>
-          <td>${a.username || a.full_name || '—'}</td>
+          <td>${formatDateTime(a.created_at || a.date)}</td>
+          <td><strong>${escapeHtml(a.username || a.full_name || '—')}</strong></td>
           <td>${actionBadge(a.action)}</td>
-          <td>${a.entity_type} #${a.entity_id || ''}</td>
-          <td>${a.details || (a.document_type || '')}</td>
+          <td>${entityBadge(a.entity_type, a.entity_name, a.entity_id)}</td>
+          <td>${buildDetail(a)}</td>
         </tr>`;
       });
     } else {
       tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>No activity recorded yet</p></td></tr>';
     }
+  }
+
+  function entityBadge(type, name, id) {
+    const label = (name || '').trim();
+    const entityLabel = label
+      ? `<strong>${escapeHtml(label)}</strong>`
+      : `#${id || ''}`;
+    return `<span class="entity-label">${type.toUpperCase()}</span> ${entityLabel}`;
+  }
+
+  function buildDetail(a) {
+    let text = a.details || (a.document_type || '');
+    if (a.entity_name && text) {
+      const name = escapeHtml(a.entity_name);
+      if (text.includes('#' + a.entity_id)) {
+        text = text.replace('#' + a.entity_id, name);
+      }
+    }
+    return escapeHtml(text);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '—';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   function actionBadge(action) {

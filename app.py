@@ -490,12 +490,35 @@ def api_dashboard_stats():
 
     # Recent activity from activity_log (with date filter)
     if from_date and to_date:
-        act_rows = query(
-            "SELECT * FROM activity_log WHERE date(created_at) BETWEEN ? AND ? ORDER BY created_at DESC LIMIT 20",
-            [from_date, to_date]
-        )
+        act_rows = query("""
+            SELECT a.*,
+               CASE
+                   WHEN a.entity_type = 'resident' THEN (SELECT full_name FROM residents WHERE id = a.entity_id)
+                   WHEN a.entity_type = 'user' THEN (SELECT u.username FROM users u WHERE u.id = a.entity_id)
+                   WHEN a.entity_type = 'household' THEN (SELECT h.household_code FROM households h WHERE h.id = a.entity_id)
+                   WHEN a.entity_type = 'request' THEN (SELECT d.document_type || ' - ' || r2.full_name FROM document_requests d JOIN residents r2 ON d.resident_id = r2.id WHERE d.id = a.entity_id)
+                   WHEN a.entity_type = 'blotter' THEN (SELECT 'vs ' || b.respondent_name FROM blotter b WHERE b.id = a.entity_id)
+                   WHEN a.entity_type = 'announcement' THEN (SELECT ann.title FROM announcements ann WHERE ann.id = a.entity_id)
+                   WHEN a.entity_type = 'schedule' THEN (SELECT sch.duty_type || ' - ' || r3.full_name FROM schedules sch JOIN users u2 ON sch.user_id = u2.id JOIN residents r3 ON u2.resident_id = r3.id WHERE sch.id = a.entity_id)
+                   ELSE NULL
+               END as entity_name
+            FROM activity_log a WHERE date(a.created_at) BETWEEN ? AND ? ORDER BY a.created_at DESC LIMIT 20
+        """, [from_date, to_date])
     else:
-        act_rows = query("SELECT * FROM activity_log ORDER BY created_at DESC LIMIT 10")
+        act_rows = query("""
+            SELECT a.*,
+               CASE
+                   WHEN a.entity_type = 'resident' THEN (SELECT full_name FROM residents WHERE id = a.entity_id)
+                   WHEN a.entity_type = 'user' THEN (SELECT u.username FROM users u WHERE u.id = a.entity_id)
+                   WHEN a.entity_type = 'household' THEN (SELECT h.household_code FROM households h WHERE h.id = a.entity_id)
+                   WHEN a.entity_type = 'request' THEN (SELECT d.document_type || ' - ' || r2.full_name FROM document_requests d JOIN residents r2 ON d.resident_id = r2.id WHERE d.id = a.entity_id)
+                   WHEN a.entity_type = 'blotter' THEN (SELECT 'vs ' || b.respondent_name FROM blotter b WHERE b.id = a.entity_id)
+                   WHEN a.entity_type = 'announcement' THEN (SELECT ann.title FROM announcements ann WHERE ann.id = a.entity_id)
+                   WHEN a.entity_type = 'schedule' THEN (SELECT sch.duty_type || ' - ' || r3.full_name FROM schedules sch JOIN users u2 ON sch.user_id = u2.id JOIN residents r3 ON u2.resident_id = r3.id WHERE sch.id = a.entity_id)
+                   ELSE NULL
+               END as entity_name
+            FROM activity_log a ORDER BY a.created_at DESC LIMIT 10
+        """)
     recent_activity = [dict_row(r) for r in act_rows]
 
     # Age distribution
