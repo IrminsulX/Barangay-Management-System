@@ -19,6 +19,7 @@
     <span class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span> On-Call</span>
     <span class="legend-item"><span class="legend-dot" style="background:#d97706"></span> Holiday Duty</span>
   </div>
+  <div class="calendar-detail" id="calendarDetail"></div>
 </div>
 {% endblock %}
 {% block scripts %}
@@ -93,39 +94,35 @@
     const dow = new Date(currentYear, currentMonth, day).getDay();
     const adjustedDow = dow === 0 ? 6 : dow - 1;
     const slots = scheduleData.filter(s => s.schedule_date ? s.schedule_date === dateStr : s.day_of_week === adjustedDow);
-    if (!slots.length) { showToast('No schedules on this day', 'info'); return; }
+    const detail = document.getElementById('calendarDetail');
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const detail = slots.map(s =>
-      `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div><strong>${escapeHtml(s.full_name)}</strong><br><small>${s.start_time} — ${s.end_time}</small></div>
-        <span class="badge badge-info">${escapeHtml(s.duty_type)}</span>
-      </div>`
-    ).join('');
-    showCustomDialog(
-      `Schedules for ${monthNames[currentMonth]} ${day}, ${currentYear}`,
-      `<div style="max-height:300px;overflow-y:auto">${detail}</div>`
-    );
+
+    if (!slots.length) {
+      detail.innerHTML = `<div class="detail-empty"><p>No schedules for ${monthNames[currentMonth]} ${day}, ${currentYear}</p></div>`;
+      detail.classList.add('show');
+      return;
+    }
+
+    detail.innerHTML = `
+      <div class="detail-header">
+        <h4>Schedules for ${monthNames[currentMonth]} ${day}, ${currentYear}</h4>
+        <button class="detail-close" onclick="closeDayDetail()">&times;</button>
+      </div>
+      <div class="detail-list">${slots.map(s =>
+        `<div class="detail-item">
+          <div class="detail-info">
+            <strong>${escapeHtml(s.full_name)}</strong>
+            <small>${s.start_time} — ${s.end_time}</small>
+          </div>
+          <span class="badge badge-info">${escapeHtml(s.duty_type)}</span>
+        </div>`
+      ).join('')}</div>
+    `;
+    detail.classList.add('show');
   }
 
-  function showCustomDialog(title, bodyHtml) {
-    let overlay = document.getElementById('dayDetailModal');
-    if (!overlay) {
-      overlay = document.createElement('div');
-      overlay.id = 'dayDetailModal';
-      overlay.className = 'modal-overlay';
-      overlay.innerHTML = `<div class="modal" style="max-width:460px">
-        <div class="modal-header"><h3 id="dayDetailTitle"></h3><button class="modal-close" onclick="closeModal('dayDetailModal')">&times;</button></div>
-        <div class="modal-body" id="dayDetailBody"></div>
-        <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dayDetailModal')">Close</button></div>
-      </div>`;
-      document.body.appendChild(overlay);
-      overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) overlay.classList.remove('show');
-      });
-    }
-    document.getElementById('dayDetailTitle').textContent = title;
-    document.getElementById('dayDetailBody').innerHTML = bodyHtml;
-    overlay.classList.add('show');
+  function closeDayDetail() {
+    document.getElementById('calendarDetail').classList.remove('show');
   }
 
   function escapeHtml(str) {

@@ -822,6 +822,32 @@ table td:last-child { text-align: right; }
 .legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); }
 .legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
 
+/* ── Calendar Day Detail Panel ── */
+.calendar-detail {
+  display:none; border-top:1px solid var(--border); padding:16px 24px;
+  animation:detailSlide .2s ease;
+}
+.calendar-detail.show { display:block; }
+@keyframes detailSlide {
+  from { opacity:0; transform:translateY(-8px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.detail-header {
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;
+}
+.detail-header h4 { font-size:15px; font-weight:700; }
+.detail-close { background:none; border:none; font-size:22px; color:var(--text-light); cursor:pointer; padding:0 4px; line-height:1; border-radius:6px; transition:all .15s; }
+.detail-close:hover { color:var(--text); background:var(--bg); }
+.detail-list { display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; }
+.detail-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 12px; border-radius:10px; background:var(--bg); border:1px solid var(--border);
+}
+.detail-info { display:flex; flex-direction:column; gap:2px; }
+.detail-info strong { font-size:14px; }
+.detail-info small { font-size:12px; color:var(--text-secondary); }
+.detail-empty { padding:24px; text-align:center; color:var(--text-secondary); }
+
 /* ── Calendar Mobile ── */
 @media (max-width: 768px) {
   .calendar-nav { padding:8px 12px 4px; }
@@ -832,7 +858,8 @@ table td:last-child { text-align: right; }
   .cal-row { gap:2px; margin-bottom:2px; }
   .cal-cell { min-height:44px; padding:3px; }
   .cal-day-num { font-size:10px; margin-bottom:1px; }
-  .cal-slot-pill { font-size:7px; padding:1px 3px; }
+  .cal-slot-pill { font-size:0; padding:0; min-width:8px; width:8px; height:8px; border-radius:50%; }
+  .cal-slot-dot { width:8px; height:8px; }
   .cal-more { font-size:8px; padding:1px 2px; }
   .calendar-legend { padding:6px 12px 10px; gap:10px; }
   .legend-item { font-size:10px; }
