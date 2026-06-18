@@ -60,9 +60,9 @@
       data.rows.forEach(a => {
         tbody.innerHTML += `<tr>
           <td>${formatDateTime(a.created_at)}</td>
-          <td>${escapeHtml(a.username)}</td>
+          <td><strong>${escapeHtml(a.username)}</strong></td>
           <td>${actionBadge(a.action)}</td>
-          <td>${escapeHtml(a.entity_type)} #${a.entity_id || ''}</td>
+          <td>${entityBadge(a.entity_type, a.entity_name, a.entity_id)}</td>
           <td>${escapeHtml(a.details || '')}</td>
         </tr>`;
       });
@@ -81,6 +81,17 @@
       'export': 'badge badge-warning'
     }[action] || 'badge';
     return `<span class="${cls}">${escapeHtml(action)}</span>`;
+  }
+
+  function entityBadge(type, name, id) {
+    const labels = {
+      resident: 'Resident', user: 'User', household: 'Household',
+      request: 'Request', blotter: 'Blotter', announcement: 'Announcement',
+      schedule: 'Schedule', database: 'Database'
+    };
+    const label = labels[type] || type;
+    const display = name ? `${escapeHtml(name)}` : (id ? `#${id}` : '');
+    return `<span class="entity-cell"><span class="entity-label">${label}</span>${display ? `<span class="entity-name">${display}</span>` : ''}</span>`;
   }
 
   function escapeHtml(str) {

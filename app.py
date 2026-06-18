@@ -426,12 +426,26 @@ def api_activity_log():
     where = ''
     params = []
     if action_filter:
-        where = " WHERE action = ?"
+        where = " WHERE a.action = ?"
         params.append(action_filter)
 
-    count = query(f"SELECT COUNT(*) as c FROM activity_log{where}", params, one=True)['c']
+    count = query(f"SELECT COUNT(*) as c FROM activity_log a{where}", params, one=True)['c']
     offset = (page - 1) * per_page
-    rows = query(f"SELECT * FROM activity_log{where} ORDER BY created_at DESC LIMIT ? OFFSET ?", params + [per_page, offset])
+    rows = query(f"""
+        SELECT a.*,
+               CASE
+                   WHEN a.entity_type = 'resident' THEN (SELECT full_name FROM residents WHERE id = a.entity_id)
+                   WHEN a.entity_type = 'user' THEN (SELECT u.username FROM users u WHERE u.id = a.entity_id)
+                   WHEN a.entity_type = 'household' THEN (SELECT h.household_code FROM households h WHERE h.id = a.entity_id)
+                   WHEN a.entity_type = 'request' THEN (SELECT d.document_type || ' - ' || r2.full_name FROM document_requests d JOIN residents r2 ON d.resident_id = r2.id WHERE d.id = a.entity_id)
+                   WHEN a.entity_type = 'blotter' THEN (SELECT 'vs ' || b.respondent_name FROM blotter b WHERE b.id = a.entity_id)
+                   WHEN a.entity_type = 'announcement' THEN (SELECT ann.title FROM announcements ann WHERE ann.id = a.entity_id)
+                   WHEN a.entity_type = 'schedule' THEN (SELECT sch.duty_type || ' - ' || r3.full_name FROM schedules sch JOIN users u2 ON sch.user_id = u2.id JOIN residents r3 ON u2.resident_id = r3.id WHERE sch.id = a.entity_id)
+                   ELSE NULL
+               END as entity_name
+        FROM activity_log a{where}
+        ORDER BY a.created_at DESC LIMIT ? OFFSET ?
+    """, params + [per_page, offset])
     return jsonify({
         'rows': [dict_row(r) for r in rows],
         'total': count,
