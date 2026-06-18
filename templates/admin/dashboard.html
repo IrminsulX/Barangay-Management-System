@@ -7,7 +7,15 @@
     <h1>Dashboard</h1>
     <div class="breadcrumb">Admin / <span>Dashboard</span></div>
   </div>
-  <div class="page-header-meta" id="lastUpdate"></div>
+  <div class="page-header-meta">
+    <span id="lastUpdate"></span>
+    <form class="date-filter" id="dateFilterForm" onsubmit="return applyDateFilter()">
+      <label>From: <input type="date" id="filterFrom"></label>
+      <label>To: <input type="date" id="filterTo"></label>
+      <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+      <button type="button" class="btn btn-sm btn-secondary" onclick="clearDateFilter()">Clear</button>
+    </form>
+  </div>
 </div>
 
 <div class="stats-grid" id="statCards">
@@ -30,16 +38,17 @@
 
 <div class="card">
   <div class="card-header">
-    <h3>Recent Activity</h3>
+    <h3>Activity Log</h3>
   </div>
   <div class="table-wrapper">
     <table id="recentTable">
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Resident</th>
-          <th>Document</th>
-          <th>Status</th>
+          <th>Date & Time</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Entity</th>
+          <th>Details</th>
         </tr>
       </thead>
       <tbody id="recentBody"></tbody>
@@ -53,15 +62,34 @@
 
   function pageReady() { loadDashboard(); }
 
-  async function loadDashboard() {
-    const data = await api('/api/dashboard-stats');
+  function applyDateFilter() {
+    const f = document.getElementById('filterFrom').value;
+    const t = document.getElementById('filterTo').value;
+    if (f && t) loadDashboard(f, t);
+    return false;
+  }
+
+  function clearDateFilter() {
+    document.getElementById('filterFrom').value = '';
+    document.getElementById('filterTo').value = '';
+    loadDashboard();
+  }
+
+  async function loadDashboard(from, to) {
+    let url = '/api/dashboard-stats';
+    const params = [];
+    if (from) params.push('from=' + from);
+    if (to) params.push('to=' + to);
+    if (params.length) url += '?' + params.join('&');
+
+    const data = await api(url);
     if (!data) return;
 
     document.getElementById('statResidents').textContent = data.total_residents;
     document.getElementById('statHouseholds').textContent = data.total_households;
     document.getElementById('statPendingRequests').textContent = data.pending_requests;
     document.getElementById('statOpenComplaints').textContent = data.open_complaints;
-    document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
+    document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleString();
 
     const months = data.monthly_requests?.map(d => d.month) || [];
     const counts = data.monthly_requests?.map(d => d.count) || [];
@@ -113,15 +141,26 @@
     if (data.recent_activity?.length) {
       data.recent_activity.forEach(a => {
         tbody.innerHTML += `<tr>
-          <td>${formatDate(a.date)}</td>
-          <td>${a.full_name}</td>
-          <td>${a.document_type}</td>
-          <td>${statusBadge(a.status)}</td>
+          <td>${formatDate(a.created_at || a.date)}</td>
+          <td>${a.username || a.full_name || '—'}</td>
+          <td>${actionBadge(a.action)}</td>
+          <td>${a.entity_type} #${a.entity_id || ''}</td>
+          <td>${a.details || (a.document_type || '')}</td>
         </tr>`;
       });
     } else {
-      tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>No recent activity</p></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><p>No activity recorded yet</p></td></tr>';
     }
+  }
+
+  function actionBadge(action) {
+    const cls = {
+      'create': 'badge badge-success',
+      'update': 'badge badge-primary',
+      'delete': 'badge badge-danger',
+      'export': 'badge badge-warning'
+    }[action] || 'badge';
+    return `<span class="${cls}">${action}</span>`;
   }
 </script>
 {% endblock %}

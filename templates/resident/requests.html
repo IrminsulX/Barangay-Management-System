@@ -1,116 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Requests — Barangay Management System</title>
-  <link rel="icon" type="image/png" href="/static/img/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-  <div class="sidebar-backdrop"></div>
-  <button class="mobile-hamburger-resident" id="hamburgerResident">&#9776;</button>
+{% extends "resident/layout.html" %}
+{% block title %}My Requests{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>My Document Requests</h1>
+</div>
 
-  <div class="resident-sidebar">
-    <div class="sidebar-header" style="gap:0;flex-direction:column;text-align:center;">
-      <img src="/static/img/logo.png" alt="Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid var(--secondary);">
-      <h2>Barangay 779</h2>
-      <small>Management System</small>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">Resident Portal</div>
-      <a href="/resident/home"><span class="icon">&#128240;</span> Announcements</a>
-      <a href="/resident/requests" class="active"><span class="icon">&#128203;</span> My Requests</a>
-      <a href="/resident/file-request"><span class="icon">&#10133;</span> File Request</a>
-      <a href="/resident/complaints"><span class="icon">&#128220;</span> My Complaints</a>
-      <a href="/resident/file-complaint"><span class="icon">&#10133;</span> File Complaint</a>
-      <a href="/resident/household"><span class="icon">&#127968;</span> My Household</a>
-      <div class="nav-section">Administration</div>
-      <a href="/admin/dashboard" id="adminLinkSidebar" style="display:none;"><span class="icon">&#128736;</span> Admin Panel</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="avatar">R</div>
-      <div class="user-info">
-        <div class="name" id="sidebarNameResident">User</div>
-        <div class="role" id="roleTagResident">Resident</div>
-      </div>
-      <button type="button" class="logout-btn" title="Logout">&#128682;</button>
-    </div>
+<div class="card">
+  <div class="card-header">
+    <h3>Request History</h3>
   </div>
-
-  <div class="resident-content">
-    <div class="page-header">
-      <h1>My Document Requests</h1>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3>Request History</h3>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Document Type</th>
-              <th>Purpose</th>
-              <th>Date Requested</th>
-              <th>Date Released</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="reqBody"></tbody>
-        </table>
-      </div>
-    </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Document Type</th>
+          <th>Purpose</th>
+          <th>Date Requested</th>
+          <th>Date Released</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="reqBody"></tbody>
+    </table>
   </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  function pageReady() { loadMyRequests(); }
 
-  <script src="/static/js/main.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', async function() {
-      const s = await api('/api/session');
-      if (!s || !s.logged_in) { window.location.href = '/login'; return; }
-      document.getElementById('sidebarNameResident').textContent = s.username;
-      const roleTag = document.getElementById('roleTagResident');
-      if (roleTag) {
-        roleTag.textContent = s.role;
-        if (s.role !== 'resident') roleTag.style.color = 'var(--secondary)';
-      }
-      const adminLink = document.getElementById('adminLinkSidebar');
-      if (adminLink && s.role !== 'resident') adminLink.style.display = 'flex';
-      loadMyRequests();
-
-      const hamburger = document.getElementById('hamburgerResident');
-      const sidebar = document.querySelector('.resident-sidebar');
-      const backdrop = document.querySelector('.sidebar-backdrop');
-      if (hamburger && sidebar) {
-        hamburger.addEventListener('click', function() {
-          sidebar.classList.toggle('open');
-          if (backdrop) backdrop.classList.toggle('show');
-        });
-        if (backdrop) {
-          backdrop.addEventListener('click', function() {
-            sidebar.classList.remove('open');
-            backdrop.classList.remove('show');
-          });
-        }
-      }
-    });
-
-    async function loadMyRequests() {
-      const data = await api('/api/requests') || [];
-      const tbody = document.getElementById('reqBody');
-      if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No requests yet. <a href="/resident/file-request">File one now</a></p></div></td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.map(r => `<tr>
-        <td><strong>${r.document_type}</strong></td>
-        <td>${r.purpose || '—'}</td>
-        <td>${formatDate(r.date_requested)}</td>
-        <td>${formatDate(r.date_released)}</td>
-        <td>${statusBadge(r.status)}</td>
-      </tr>`).join('');
+  async function loadMyRequests() {
+    const data = await api('/api/requests') || [];
+    const tbody = document.getElementById('reqBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No requests yet. <a href="/resident/file-request">File one now</a></p></div></td></tr>';
+      return;
     }
-  </script>
-</body>
-</html>
+    tbody.innerHTML = data.map(r => `<tr>
+      <td><strong>${r.document_type}</strong></td>
+      <td>${r.purpose || '—'}</td>
+      <td>${formatDate(r.date_requested)}</td>
+      <td>${formatDate(r.date_released)}</td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`).join('');
+  }
+</script>
+{% endblock %}

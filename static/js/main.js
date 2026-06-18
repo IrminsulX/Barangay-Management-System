@@ -78,9 +78,31 @@ function statusBadge(status) {
   return `<span class="badge ${cls}">${status}</span>`;
 }
 
+// ── CSRF Token ──────────────────────────────────────
+let _csrfToken = null;
+
+function getCsrfToken() {
+  if (_csrfToken) return _csrfToken;
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.getAttribute('content') : null;
+}
+
+async function _loadCsrf() {
+  try {
+    const res = await fetch('/api/session', { headers: { 'Accept': 'application/json' } });
+    const data = await res.json();
+    if (data.csrf_token) _csrfToken = data.csrf_token;
+  } catch (e) { /* ignore */ }
+}
+
 // ── API Helper ──────────────────────────────────────
 async function api(url, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
   const defaultHeaders = { 'Content-Type': 'application/json' };
+  if (method !== 'GET' && method !== 'HEAD') {
+    const token = getCsrfToken();
+    if (token) defaultHeaders['X-CSRF-Token'] = token;
+  }
   const config = {
     headers: { ...defaultHeaders, ...options.headers },
     ...options
@@ -93,15 +115,21 @@ async function api(url, options = {}) {
     window.location.href = '/login';
     return null;
   }
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({ error: 'Too many requests' }));
+    showToast(data.error || 'Too many attempts. Please try again later.', 'error');
+    return null;
+  }
   if (res.status === 403) {
     showToast('Access denied', 'error');
     return null;
   }
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok && data.error) {
     showToast(data.error, 'error');
     return null;
   }
+  if (data.csrf_token) _csrfToken = data.csrf_token;
   return data;
 }
 

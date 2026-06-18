@@ -6,10 +6,16 @@
     <h1>Resident Records</h1>
     <div class="breadcrumb">Admin / <span>Residents</span></div>
   </div>
-  <button class="btn btn-primary" onclick="openResidentModal()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Add Resident
-  </button>
+  <div class="page-header-actions">
+    <a href="/api/export/residents" class="btn btn-secondary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export CSV
+    </a>
+    <button class="btn btn-primary" onclick="openResidentModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Resident
+    </button>
+  </div>
 </div>
 
 <div class="card">
@@ -95,7 +101,7 @@
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input type="password" id="rPassword" placeholder="Min. 6 characters">
+          <input type="password" id="rPassword" placeholder="Min. 8 characters, with letters and numbers" pattern="(?=.*[A-Za-z])(?=.*\d).{8,}" title="At least 8 characters with letters and numbers">
         </div>
       </div>
       <div class="form-row">

@@ -61,6 +61,7 @@
         });
         const data = await res.json();
         if (data.success) {
+          if (data.csrf_token) _csrfToken = data.csrf_token;
           window.location.href = data.role === 'resident'
             ? '/resident/home' : '/admin/dashboard';
         } else {
@@ -68,7 +69,11 @@
           err.classList.add('show');
         }
       } catch (e) {
-        errText.textContent = 'Connection error. Please try again.';
+        if (e instanceof TypeError && e.message.includes('fetch')) {
+          errText.textContent = 'Connection error. Please try again.';
+        } else {
+          errText.textContent = 'Connection error. Please try again.';
+        }
         err.classList.add('show');
       } finally {
         btn.classList.remove('loading');
