@@ -130,16 +130,8 @@
         <select id="schedOfficialId"></select>
       </div>
       <div class="form-group">
-        <label>Day of Week</label>
-        <select id="schedDay">
-          <option value="0">Monday</option>
-          <option value="1">Tuesday</option>
-          <option value="2">Wednesday</option>
-          <option value="3">Thursday</option>
-          <option value="4">Friday</option>
-          <option value="5">Saturday</option>
-          <option value="6">Sunday</option>
-        </select>
+        <label>Date</label>
+        <input type="date" id="schedDate" class="form-control">
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-group">
@@ -373,16 +365,20 @@
   function openScheduleModal() {
     document.getElementById('schedStart').value = '08:00';
     document.getElementById('schedEnd').value = '17:00';
-    document.getElementById('schedDay').value = '0';
+    document.getElementById('schedDate').value = new Date().toISOString().split('T')[0];
     document.getElementById('schedDuty').value = 'Office Hours';
     loadScheduleOfficials();
     openModal('scheduleModal');
   }
 
   async function addScheduleSlot() {
+    const dateVal = document.getElementById('schedDate').value;
+    if (!dateVal) { showToast('Please select a date', 'error'); return; }
+    const dow = new Date(dateVal + 'T12:00:00').getDay();
+    const day_of_week = dow === 0 ? 6 : dow - 1;
     const body = {
       user_id: parseInt(document.getElementById('schedOfficialId').value),
-      day_of_week: parseInt(document.getElementById('schedDay').value),
+      day_of_week,
       start_time: document.getElementById('schedStart').value,
       end_time: document.getElementById('schedEnd').value,
       duty_type: document.getElementById('schedDuty').value,
