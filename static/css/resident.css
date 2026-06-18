@@ -293,7 +293,7 @@
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  gap: 24px;
   margin-bottom: 28px;
 }
 
@@ -333,8 +333,8 @@
 .resident-dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--gap);
-  margin-top: var(--gap);
+  gap: 24px;
+  margin-top: 28px;
 }
 
 .announcement-mini {
@@ -374,7 +374,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border);
   background: var(--bg);
 }
@@ -402,7 +402,7 @@
 .dash-card-action:hover { opacity: 0.75; }
 
 .dash-card-body {
-  padding: 6px 0;
+  padding: 8px 0;
 }
 
 /* Feed items (requests, complaints, schedules) */
@@ -410,8 +410,8 @@
 .dash-feed-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 13px 20px;
+  gap: 16px;
+  padding: 14px 24px;
   transition: background 0.15s ease;
   border-bottom: 1px solid var(--border);
 }
@@ -488,7 +488,7 @@
 /* Announcements in dashboard */
 
 .dash-announcement {
-  padding: 16px 20px;
+  padding: 18px 24px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;
 }
@@ -519,7 +519,7 @@
 
 /* Empty state */
 .dash-empty {
-  padding: 32px 20px;
+  padding: 40px 24px;
   text-align: center;
 }
 .dash-empty p {
@@ -530,5 +530,5 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .resident-dashboard-grid { grid-template-columns: 1fr; }
+  .resident-dashboard-grid { grid-template-columns: 1fr; gap: 16px; margin-top: 16px; }
 }
