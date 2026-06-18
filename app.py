@@ -92,37 +92,37 @@ def login_page():
 def admin_dashboard():
     if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
         return redirect(url_for('login_page'))
-    return render_template('admin/dashboard.html')
+    return render_template('admin/dashboard.html', active_page='dashboard')
 
 @app.route('/admin/residents')
 def admin_residents():
     if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
         return redirect(url_for('login_page'))
-    return render_template('admin/residents.html')
+    return render_template('admin/residents.html', active_page='residents')
 
 @app.route('/admin/households')
 def admin_households():
     if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
         return redirect(url_for('login_page'))
-    return render_template('admin/households.html')
+    return render_template('admin/households.html', active_page='households')
 
 @app.route('/admin/requests')
 def admin_requests():
     if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
         return redirect(url_for('login_page'))
-    return render_template('admin/requests.html')
+    return render_template('admin/requests.html', active_page='requests')
 
 @app.route('/admin/blotter')
 def admin_blotter():
     if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
         return redirect(url_for('login_page'))
-    return render_template('admin/blotter.html')
+    return render_template('admin/blotter.html', active_page='blotter')
 
 @app.route('/admin/announcements')
 def admin_announcements():
     if 'user_id' not in session or session.get('role') not in ('admin', 'staff'):
         return redirect(url_for('login_page'))
-    return render_template('admin/announcements.html')
+    return render_template('admin/announcements.html', active_page='announcements')
 
 @app.route('/resident/home')
 def resident_home():

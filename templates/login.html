@@ -3,17 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login — Barangay Management System</title>
+  <title>Sign In — Barangay Management System</title>
   <link rel="icon" type="image/png" href="/static/img/logo.png">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="login-page">
-  <div class="login-container">
-    <img src="/static/img/logo.png" alt="Logo" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 16px;display:block;border:3px solid var(--secondary);">
-    <h1>Barangay 779</h1>
-    <p class="subtitle">Management System — Sign In</p>
-    <div class="login-error" id="loginError"></div>
-    <form id="loginForm">
+  <div class="login-bg-shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+  <main class="login-container">
+    <div class="login-header">
+      <div class="login-logo">
+        <img src="/static/img/logo.png" alt="Barangay 779" class="login-logo-img">
+      </div>
+      <h1>Barangay 779</h1>
+      <p class="login-subtitle">Management System — Sign In</p>
+    </div>
+    <div class="login-error" id="loginError" role="alert">
+      <span class="login-error-icon">!</span>
+      <span id="loginErrorText"></span>
+    </div>
+    <form id="loginForm" novalidate>
       <div class="form-group">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus>
@@ -22,21 +34,22 @@
         <label for="password">Password</label>
         <input type="password" id="password" name="password" placeholder="Enter your password" required>
       </div>
-      <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
-        Sign In
+      <button type="submit" class="btn login-btn" id="loginBtn">
+        <span class="btn-text">Sign In</span>
+        <span class="btn-spinner"></span>
       </button>
     </form>
     <p class="login-footer">Barangay Management System v1.0</p>
-  </div>
+  </main>
   <script src="/static/js/main.js"></script>
   <script>
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const btn = document.getElementById('loginBtn');
       const err = document.getElementById('loginError');
-      btn.disabled = true;
-      btn.textContent = 'Signing in...';
-      err.style.display = 'none';
+      const errText = document.getElementById('loginErrorText');
+      btn.classList.add('loading');
+      err.classList.remove('show');
       try {
         const res = await fetch('/api/login', {
           method: 'POST',
@@ -51,15 +64,14 @@
           window.location.href = data.role === 'resident'
             ? '/resident/home' : '/admin/dashboard';
         } else {
-          err.textContent = data.error || 'Invalid username or password';
-          err.style.display = 'block';
+          errText.textContent = data.error || 'Invalid username or password';
+          err.classList.add('show');
         }
       } catch (e) {
-        err.textContent = 'Connection error. Please try again.';
-        err.style.display = 'block';
+        errText.textContent = 'Connection error. Please try again.';
+        err.classList.add('show');
       } finally {
-        btn.disabled = false;
-        btn.textContent = 'Sign In';
+        btn.classList.remove('loading');
       }
     });
   </script>

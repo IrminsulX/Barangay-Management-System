@@ -1,183 +1,127 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard — Barangay Management System</title>
-  <link rel="icon" type="image/png" href="/static/img/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-  <div class="sidebar-backdrop"></div>
-  <button class="mobile-hamburger" id="hamburger">&#9776;</button>
-
-  <div class="sidebar">
-    <div class="sidebar-header" style="gap:0;flex-direction:column;text-align:center;">
-      <img src="/static/img/logo.png" alt="Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid var(--secondary);">
-      <div>
-        <h2>Barangay 779</h2>
-        <small>Management System</small>
-      </div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">Main</div>
-      <a href="/admin/dashboard" class="active"><span class="icon">&#9679;</span> Dashboard</a>
-      <a href="/admin/residents"><span class="icon">&#128101;</span> Residents</a>
-      <a href="/admin/households"><span class="icon">&#127968;</span> Households</a>
-      <div class="nav-section">Services</div>
-      <a href="/admin/requests"><span class="icon">&#128203;</span> Requests</a>
-      <a href="/admin/blotter"><span class="icon">&#128220;</span> Blotter</a>
-      <a href="/admin/announcements"><span class="icon">&#128240;</span> Announcements</a>
-      <div class="nav-section">Portal</div>
-      <a href="/resident/home"><span class="icon">&#127760;</span> Resident Portal</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="avatar">A</div>
-      <div class="user-info">
-        <div class="name" id="sidebarName">User</div>
-        <div class="role" id="sidebarRole">admin</div>
-      </div>
-      <button class="logout-btn" title="Logout">&#128682;</button>
-    </div>
+{% extends "admin/layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block head_extra %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <div class="breadcrumb">Admin / <span>Dashboard</span></div>
   </div>
+  <div class="page-header-meta" id="lastUpdate"></div>
+</div>
 
-  <div class="main-content">
-    <div class="page-header">
-      <div>
-        <h1>Dashboard</h1>
-        <div class="breadcrumb">Admin / <span>Dashboard</span></div>
-      </div>
-      <div style="font-size:13px;color:var(--text-light)" id="lastUpdate"></div>
-    </div>
+<div class="stats-grid" id="statCards">
+  <div class="stat-card"><div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="stat-info"><div class="stat-value" id="statResidents">0</div><div class="stat-label">Total Residents</div></div></div>
+  <div class="stat-card"><div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><div class="stat-info"><div class="stat-value" id="statHouseholds">0</div><div class="stat-label">Households</div></div></div>
+  <div class="stat-card"><div class="stat-icon yellow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div><div class="stat-info"><div class="stat-value" id="statPendingRequests">0</div><div class="stat-label">Pending Requests</div></div></div>
+  <div class="stat-card"><div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><div class="stat-info"><div class="stat-value" id="statOpenComplaints">0</div><div class="stat-label">Open Complaints</div></div></div>
+</div>
 
-    <div class="stats-grid" id="statCards">
-      <div class="stat-card"><div class="stat-icon blue">&#128101;</div><div class="stat-info"><div class="stat-value" id="statResidents">0</div><div class="stat-label">Total Residents</div></div></div>
-      <div class="stat-card"><div class="stat-icon green">&#127968;</div><div class="stat-info"><div class="stat-value" id="statHouseholds">0</div><div class="stat-label">Households</div></div></div>
-      <div class="stat-card"><div class="stat-icon yellow">&#128203;</div><div class="stat-info"><div class="stat-value" id="statPendingRequests">0</div><div class="stat-label">Pending Requests</div></div></div>
-      <div class="stat-card"><div class="stat-icon red">&#128220;</div><div class="stat-info"><div class="stat-value" id="statOpenComplaints">0</div><div class="stat-label">Open Complaints</div></div></div>
-    </div>
-
-    <div class="charts-row">
-      <div class="chart-card">
-        <h3>Monthly Requests (Last 6 Months)</h3>
-        <canvas id="chartMonthly"></canvas>
-      </div>
-      <div class="chart-card">
-        <h3>Request Status Distribution</h3>
-        <canvas id="chartStatus"></canvas>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3>Recent Activity</h3>
-      </div>
-      <div class="table-wrapper">
-        <table id="recentTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Resident</th>
-              <th>Document</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="recentBody"></tbody>
-        </table>
-      </div>
-    </div>
+<div class="charts-row">
+  <div class="chart-card">
+    <h3>Monthly Requests <span class="chart-subtitle">Last 6 Months</span></h3>
+    <canvas id="chartMonthly"></canvas>
   </div>
+  <div class="chart-card">
+    <h3>Request Status <span class="chart-subtitle">Distribution</span></h3>
+    <canvas id="chartStatus"></canvas>
+  </div>
+</div>
 
-  <script src="/static/js/main.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script>
-    let chartMonthly = null, chartStatus = null;
+<div class="card">
+  <div class="card-header">
+    <h3>Recent Activity</h3>
+  </div>
+  <div class="table-wrapper">
+    <table id="recentTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Resident</th>
+          <th>Document</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="recentBody"></tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let chartMonthly = null, chartStatus = null;
 
-    document.addEventListener('DOMContentLoaded', async function() {
-      const session = await api('/api/session');
-      if (!session || !session.logged_in) { window.location.href = '/login'; return; }
-      document.getElementById('sidebarName').textContent = session.username;
-      document.getElementById('sidebarRole').textContent = session.role;
-      loadDashboard();
+  function pageReady() { loadDashboard(); }
+
+  async function loadDashboard() {
+    const data = await api('/api/dashboard-stats');
+    if (!data) return;
+
+    document.getElementById('statResidents').textContent = data.total_residents;
+    document.getElementById('statHouseholds').textContent = data.total_households;
+    document.getElementById('statPendingRequests').textContent = data.pending_requests;
+    document.getElementById('statOpenComplaints').textContent = data.open_complaints;
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
+
+    const months = data.monthly_requests?.map(d => d.month) || [];
+    const counts = data.monthly_requests?.map(d => d.count) || [];
+    if (chartMonthly) chartMonthly.destroy();
+    chartMonthly = new Chart(document.getElementById('chartMonthly').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: months,
+        datasets: [{
+          label: 'Requests',
+          data: counts,
+          backgroundColor: 'rgba(42,90,140,0.6)',
+          borderColor: 'rgba(42,90,140,1)',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
     });
 
-    async function loadDashboard() {
-      const data = await api('/api/dashboard-stats');
-      if (!data) return;
-
-      document.getElementById('statResidents').textContent = data.total_residents;
-      document.getElementById('statHouseholds').textContent = data.total_households;
-      document.getElementById('statPendingRequests').textContent = data.pending_requests;
-      document.getElementById('statOpenComplaints').textContent = data.open_complaints;
-      document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleString();
-
-      // Monthly chart
-      const months = data.monthly_requests?.map(d => d.month) || [];
-      const counts = data.monthly_requests?.map(d => d.count) || [];
-
-      if (chartMonthly) chartMonthly.destroy();
-      const ctx1 = document.getElementById('chartMonthly').getContext('2d');
-      chartMonthly = new Chart(ctx1, {
-        type: 'bar',
-        data: {
-          labels: months,
-          datasets: [{
-            label: 'Requests',
-            data: counts,
-            backgroundColor: 'rgba(42,90,140,0.6)',
-            borderColor: 'rgba(42,90,140,1)',
-            borderWidth: 1,
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
-      });
-
-      // Status distribution
-      const labels = data.status_distribution?.map(d => d.status) || [];
-      const vals = data.status_distribution?.map(d => d.count) || [];
-      const colors = ['#f5a623','#1976d2','#388e3c','#2e7d32','#c62828'];
-
-      if (chartStatus) chartStatus.destroy();
-      const ctx2 = document.getElementById('chartStatus').getContext('2d');
-      chartStatus = new Chart(ctx2, {
-        type: 'doughnut',
-        data: {
-          labels: labels,
-          datasets: [{
-            data: vals,
-            backgroundColor: colors.slice(0, labels.length),
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true } } }
-        }
-      });
-
-      // Recent activity
-      const tbody = document.getElementById('recentBody');
-      tbody.innerHTML = '';
-      if (data.recent_activity?.length) {
-        data.recent_activity.forEach(a => {
-          tbody.innerHTML += `<tr>
-            <td>${formatDate(a.date)}</td>
-            <td>${a.full_name}</td>
-            <td>${a.document_type}</td>
-            <td>${statusBadge(a.status)}</td>
-          </tr>`;
-        });
-      } else {
-        tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>No recent activity</p></td></tr>';
+    const labels = data.status_distribution?.map(d => d.status) || [];
+    const vals = data.status_distribution?.map(d => d.count) || [];
+    const colors = ['#f5a623','#1976d2','#388e3c','#2e7d32','#c62828'];
+    if (chartStatus) chartStatus.destroy();
+    chartStatus = new Chart(document.getElementById('chartStatus').getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: vals,
+          backgroundColor: colors.slice(0, labels.length),
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true } } }
       }
+    });
+
+    const tbody = document.getElementById('recentBody');
+    tbody.innerHTML = '';
+    if (data.recent_activity?.length) {
+      data.recent_activity.forEach(a => {
+        tbody.innerHTML += `<tr>
+          <td>${formatDate(a.date)}</td>
+          <td>${a.full_name}</td>
+          <td>${a.document_type}</td>
+          <td>${statusBadge(a.status)}</td>
+        </tr>`;
+      });
+    } else {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><p>No recent activity</p></td></tr>';
     }
-  </script>
-</body>
-</html>
+  }
+</script>
+{% endblock %}

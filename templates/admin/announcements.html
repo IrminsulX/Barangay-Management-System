@@ -1,203 +1,152 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Announcements — Barangay Management System</title>
-  <link rel="icon" type="image/png" href="/static/img/logo.png">
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-  <div class="sidebar-backdrop"></div>
-  <button class="mobile-hamburger" id="hamburger">&#9776;</button>
-
-  <div class="sidebar">
-    <div class="sidebar-header" style="gap:0;flex-direction:column;text-align:center;">
-      <img src="/static/img/logo.png" alt="Logo" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid var(--secondary);">
-      <div>
-        <h2>Barangay 779</h2>
-        <small>Management System</small>
-      </div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-section">Main</div>
-      <a href="/admin/dashboard"><span class="icon">&#9679;</span> Dashboard</a>
-      <a href="/admin/residents"><span class="icon">&#128101;</span> Residents</a>
-      <a href="/admin/households"><span class="icon">&#127968;</span> Households</a>
-      <div class="nav-section">Services</div>
-      <a href="/admin/requests"><span class="icon">&#128203;</span> Requests</a>
-      <a href="/admin/blotter"><span class="icon">&#128220;</span> Blotter</a>
-      <a href="/admin/announcements" class="active"><span class="icon">&#128240;</span> Announcements</a>
-      <div class="nav-section">Portal</div>
-      <a href="/resident/home"><span class="icon">&#127760;</span> Resident Portal</a>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="avatar">A</div>
-      <div class="user-info">
-        <div class="name" id="sidebarName">User</div>
-        <div class="role" id="sidebarRole">admin</div>
-      </div>
-      <button class="logout-btn" title="Logout">&#128682;</button>
-    </div>
+{% extends "admin/layout.html" %}
+{% block title %}Announcements{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Announcements & Events</h1>
+    <div class="breadcrumb">Admin / <span>Announcements</span></div>
   </div>
+  <button class="btn btn-primary" onclick="openAnnModal()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    New Announcement
+  </button>
+</div>
 
-  <div class="main-content">
-    <div class="page-header">
-      <div>
-        <h1>Announcements & Events</h1>
-        <div class="breadcrumb">Admin / <span>Announcements</span></div>
-      </div>
-      <button class="btn btn-primary" onclick="openAnnModal()">+ New Announcement</button>
-    </div>
-
-    <div class="card">
-      <div class="card-header">
-        <h3>All Announcements</h3>
-      </div>
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Category</th>
-              <th>Event Date</th>
-              <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="annBody"></tbody>
-        </table>
-      </div>
-    </div>
+<div class="card">
+  <div class="card-header">
+    <h3>All Announcements</h3>
   </div>
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Event Date</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="annBody"></tbody>
+    </table>
+  </div>
+</div>
 
-  <!-- Modal -->
-  <div class="modal-overlay" id="annModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="annModalTitle">New Announcement</h3>
-        <button class="modal-close" onclick="closeModal('annModal')">&times;</button>
+<div class="modal-overlay" id="annModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="annModalTitle">New Announcement</h3>
+      <button class="modal-close" onclick="closeModal('annModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editAnnId">
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="annTitle" required>
       </div>
-      <div class="modal-body">
-        <input type="hidden" id="editAnnId">
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="annDesc" rows="4" required></textarea>
+      </div>
+      <div class="form-row">
         <div class="form-group">
-          <label>Title</label>
-          <input type="text" id="annTitle" required>
+          <label>Category</label>
+          <select id="annCategory">
+            <option value="General">General</option>
+            <option value="Event">Event</option>
+            <option value="Ordinance">Ordinance</option>
+            <option value="Health">Health</option>
+            <option value="Peace & Order">Peace & Order</option>
+            <option value="Disaster">Disaster</option>
+          </select>
         </div>
         <div class="form-group">
-          <label>Description</label>
-          <textarea id="annDesc" rows="4" required></textarea>
+          <label>Event Date <span class="field-optional">optional</span></label>
+          <input type="date" id="annDate">
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Category</label>
-            <select id="annCategory">
-              <option value="General">General</option>
-              <option value="Event">Event</option>
-              <option value="Ordinance">Ordinance</option>
-              <option value="Health">Health</option>
-              <option value="Peace & Order">Peace & Order</option>
-              <option value="Disaster">Disaster</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Event Date (optional)</label>
-            <input type="date" id="annDate">
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="closeModal('annModal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveAnnouncement()">Save</button>
       </div>
     </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('annModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAnnouncement()">Save</button>
+    </div>
   </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  function pageReady() { loadAnnouncements(); }
 
-  <script src="/static/js/main.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      loadSessionAnn();
-      loadAnnouncements();
-    });
-
-    async function loadSessionAnn() {
-      const s = await api('/api/session');
-      if (!s || !s.logged_in) { window.location.href = '/login'; return; }
-      document.getElementById('sidebarName').textContent = s.username;
-      document.getElementById('sidebarRole').textContent = s.role;
+  async function loadAnnouncements() {
+    const data = await api('/api/announcements') || [];
+    const tbody = document.getElementById('annBody');
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No announcements yet</p></div></td></tr>';
+      return;
     }
+    tbody.innerHTML = data.map(a => `<tr>
+      <td><strong>${a.title}</strong></td>
+      <td><span class="badge badge-pending">${a.category}</span></td>
+      <td>${formatDate(a.event_date)}</td>
+      <td>${formatDate(a.created_at)}</td>
+      <td class="actions">
+        <button class="btn btn-sm btn-warning" onclick="editAnn(${a.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteAnn(${a.id})">Del</button>
+      </td>
+    </tr>`).join('');
+  }
 
-    async function loadAnnouncements() {
-      const data = await api('/api/announcements') || [];
-      const tbody = document.getElementById('annBody');
-      if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><p>No announcements yet</p></div></td></tr>';
-        return;
-      }
-      tbody.innerHTML = data.map(a => `<tr>
-        <td><strong>${a.title}</strong></td>
-        <td><span class="badge badge-pending">${a.category}</span></td>
-        <td>${formatDate(a.event_date)}</td>
-        <td>${formatDate(a.created_at)}</td>
-        <td class="actions">
-          <button class="btn btn-sm btn-warning" onclick="editAnn(${a.id})">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteAnn(${a.id})">Del</button>
-        </td>
-      </tr>`).join('');
-    }
+  function openAnnModal() {
+    document.getElementById('annModalTitle').textContent = 'New Announcement';
+    document.getElementById('editAnnId').value = '';
+    document.getElementById('annTitle').value = '';
+    document.getElementById('annDesc').value = '';
+    document.getElementById('annCategory').value = 'General';
+    document.getElementById('annDate').value = '';
+    openModal('annModal');
+  }
 
-    function openAnnModal() {
-      document.getElementById('annModalTitle').textContent = 'New Announcement';
-      document.getElementById('editAnnId').value = '';
-      document.getElementById('annTitle').value = '';
-      document.getElementById('annDesc').value = '';
-      document.getElementById('annCategory').value = 'General';
-      document.getElementById('annDate').value = '';
-      openModal('annModal');
-    }
+  async function editAnn(id) {
+    const all = await api('/api/announcements') || [];
+    const a = all.find(x => x.id === id);
+    if (!a) return;
+    document.getElementById('annModalTitle').textContent = 'Edit Announcement';
+    document.getElementById('editAnnId').value = a.id;
+    document.getElementById('annTitle').value = a.title;
+    document.getElementById('annDesc').value = a.description;
+    document.getElementById('annCategory').value = a.category;
+    document.getElementById('annDate').value = a.event_date || '';
+    openModal('annModal');
+  }
 
-    async function editAnn(id) {
-      const all = await api('/api/announcements') || [];
-      const a = all.find(x => x.id === id);
-      if (!a) return;
-      document.getElementById('annModalTitle').textContent = 'Edit Announcement';
-      document.getElementById('editAnnId').value = a.id;
-      document.getElementById('annTitle').value = a.title;
-      document.getElementById('annDesc').value = a.description;
-      document.getElementById('annCategory').value = a.category;
-      document.getElementById('annDate').value = a.event_date || '';
-      openModal('annModal');
+  async function saveAnnouncement() {
+    const id = document.getElementById('editAnnId').value;
+    const data = {
+      title: document.getElementById('annTitle').value,
+      description: document.getElementById('annDesc').value,
+      category: document.getElementById('annCategory').value,
+      event_date: document.getElementById('annDate').value || null
+    };
+    if (!data.title || !data.description) {
+      showToast('Title and description are required', 'error');
+      return;
     }
+    if (id) {
+      await api(`/api/announcements/${id}`, { method: 'PUT', body: data });
+      showToast('Announcement updated');
+    } else {
+      await api('/api/announcements', { method: 'POST', body: data });
+      showToast('Announcement created');
+    }
+    closeModal('annModal');
+    loadAnnouncements();
+  }
 
-    async function saveAnnouncement() {
-      const id = document.getElementById('editAnnId').value;
-      const data = {
-        title: document.getElementById('annTitle').value,
-        description: document.getElementById('annDesc').value,
-        category: document.getElementById('annCategory').value,
-        event_date: document.getElementById('annDate').value || null
-      };
-      if (!data.title || !data.description) {
-        showToast('Title and description are required', 'error');
-        return;
-      }
-      if (id) {
-        await api(`/api/announcements/${id}`, { method: 'PUT', body: data });
-        showToast('Announcement updated');
-      } else {
-        await api('/api/announcements', { method: 'POST', body: data });
-        showToast('Announcement created');
-      }
-      closeModal('annModal');
-      loadAnnouncements();
-    }
-
-    async function deleteAnn(id) {
-      if (!confirm('Delete this announcement?')) return;
-      await api(`/api/announcements/${id}`, { method: 'DELETE' });
-      showToast('Announcement deleted');
-      loadAnnouncements();
-    }
-  </script>
-</body>
-</html>
+  async function deleteAnn(id) {
+    if (!confirm('Delete this announcement?')) return;
+    await api(`/api/announcements/${id}`, { method: 'DELETE' });
+    showToast('Announcement deleted');
+    loadAnnouncements();
+  }
+</script>
+{% endblock %}
