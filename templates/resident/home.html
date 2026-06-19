@@ -66,6 +66,10 @@
   function stripHtml(html) {
     const d = document.createElement('div');
     d.innerHTML = html;
+    // Replace block-level closing tags with newline to preserve list/item breaks
+    d.innerHTML = d.innerHTML
+      .replace(/<\/(li|p|div|h[1-6]|blockquote|tr)>/gi, '\n')
+      .replace(/<br\s*\/?>/gi, '\n');
     return d.textContent || d.innerText || '';
   }
 
