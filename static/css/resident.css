@@ -647,6 +647,24 @@
   color: var(--muted);
 }
 
+.dash-ann-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.dash-ann-read-more {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.dash-ann-read-more:hover { opacity: 0.75; text-decoration: underline; }
+
 /* Empty state */
 .dash-empty {
   padding: 40px 24px;

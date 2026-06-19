@@ -144,7 +144,10 @@
           <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
           <h4 class="dash-ann-title">${escapeHtml(a.title)}</h4>
           <div class="dash-ann-desc">${a.description || ''}</div>
-          <div class="dash-ann-date">${timeAgo(a.created_at)}</div>
+          <div class="dash-ann-footer">
+            <span class="dash-ann-date">${timeAgo(a.created_at)}</span>
+            <a href="/resident/announcements/${a.id}" class="dash-ann-read-more">Read More &rarr;</a>
+          </div>
         </div>`;
       }).join('');
     } else {
