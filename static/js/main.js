@@ -279,18 +279,16 @@ async function _loadCsrf() {
 async function api(url, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const isFormData = options.body instanceof FormData;
-  const defaultHeaders = isFormData ? {} : { 'Content-Type': 'application/json' };
+  const headers = {};
+  if (!isFormData) headers['Content-Type'] = 'application/json';
   if (method !== 'GET' && method !== 'HEAD') {
     const token = getCsrfToken();
-    if (token) defaultHeaders['X-CSRF-Token'] = token;
+    if (token) headers['X-CSRF-Token'] = token;
   }
-  const config = {
-    headers: { ...defaultHeaders, ...options.headers },
-    ...options
-  };
-  if (config.body && typeof config.body === 'object' && !isFormData) {
-    config.body = JSON.stringify(config.body);
-  }
+  const config = { method, headers };
+  if (options.body) config.body = options.body;
+  if (options.signal) config.signal = options.signal;
+  // pass through any other relevant options
   const res = await fetch(url, config);
   if (res.status === 401) {
     window.location.href = '/login';

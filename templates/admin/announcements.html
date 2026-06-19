@@ -250,10 +250,12 @@
     else if (!id && currentImagePath) formData.append('image_path', currentImagePath);
 
     if (id) {
-      await api(`/api/announcements/${id}`, { method: 'PUT', body: formData });
+      const r = await api(`/api/announcements/${id}`, { method: 'PUT', body: formData });
+      if (!r) return;
       showToast('Announcement updated');
     } else {
-      await api('/api/announcements', { method: 'POST', body: formData });
+      const r = await api('/api/announcements', { method: 'POST', body: formData });
+      if (!r) return;
       showToast('Announcement created');
     }
     closeModal('annModal');

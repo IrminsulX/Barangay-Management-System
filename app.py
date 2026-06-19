@@ -1021,12 +1021,22 @@ def api_announcements():
     if session.get('role') not in ADMIN_ROLES:
         return jsonify({'error': 'Forbidden'}), 403
 
-    title = request.form.get('title') or (request.get_json() or {}).get('title')
-    description = request.form.get('description') or (request.get_json() or {}).get('description')
-    category = request.form.get('category') or (request.get_json() or {}).get('category', 'General')
-    event_date = request.form.get('event_date') or (request.get_json() or {}).get('event_date')
-    published_at = request.form.get('published_at') or (request.get_json() or {}).get('published_at')
-    is_pinned = request.form.get('is_pinned', type=int) or (request.get_json() or {}).get('is_pinned', 0)
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        category = request.form.get('category', 'General')
+        event_date = request.form.get('event_date') or None
+        published_at = request.form.get('published_at') or None
+        raw = request.form.get('is_pinned', '0')
+        is_pinned = 1 if raw == '1' else 0
+    else:
+        body = request.get_json() or {}
+        title = (body.get('title') or '').strip()
+        description = (body.get('description') or '').strip()
+        category = body.get('category', 'General')
+        event_date = body.get('event_date') or None
+        published_at = body.get('published_at') or None
+        is_pinned = 1 if body.get('is_pinned') else 0
 
     if not title or not description:
         return jsonify({'error': 'Title and description are required'}), 400
@@ -1073,17 +1083,25 @@ def api_announcement(aid):
         if session.get('role') not in ADMIN_ROLES:
             return jsonify({'error': 'Forbidden'}), 403
 
-        title = request.form.get('title') or (request.get_json() or {}).get('title', ann['title'])
-        description = request.form.get('description') or (request.get_json() or {}).get('description', ann['description'])
-        category = request.form.get('category') or (request.get_json() or {}).get('category', ann['category'])
-        event_date = request.form.get('event_date') or (request.get_json() or {}).get('event_date', ann['event_date'])
-        published_at = request.form.get('published_at') or (request.get_json() or {}).get('published_at', ann['published_at'])
-        is_active = request.form.get('is_active', type=int)
-        if is_active is None:
-            is_active = (request.get_json() or {}).get('is_active', ann['is_active'])
-        is_pinned = request.form.get('is_pinned', type=int)
-        if is_pinned is None:
-            is_pinned = (request.get_json() or {}).get('is_pinned', ann['is_pinned'])
+        if request.content_type and 'multipart/form-data' in request.content_type:
+            title = request.form.get('title', '').strip() or ann['title']
+            description = request.form.get('description', '').strip() or ann['description']
+            category = request.form.get('category') or ann['category']
+            event_date = request.form.get('event_date') or ann['event_date']
+            published_at = request.form.get('published_at') or ann['published_at']
+            raw_active = request.form.get('is_active')
+            is_active = ann['is_active'] if raw_active is None else (1 if raw_active == '1' else 0)
+            raw_pinned = request.form.get('is_pinned')
+            is_pinned = ann['is_pinned'] if raw_pinned is None else (1 if raw_pinned == '1' else 0)
+        else:
+            body = request.get_json() or {}
+            title = (body.get('title') or '').strip() or ann['title']
+            description = (body.get('description') or '').strip() or ann['description']
+            category = body.get('category') or ann['category']
+            event_date = body.get('event_date') or ann['event_date']
+            published_at = body.get('published_at') or ann['published_at']
+            is_active = body.get('is_active') if body.get('is_active') is not None else ann['is_active']
+            is_pinned = body.get('is_pinned') if body.get('is_pinned') is not None else ann['is_pinned']
 
         image_path = ann['image_path']
         if 'image' in request.files:
