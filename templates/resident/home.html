@@ -1,34 +1,91 @@
 {% extends "resident/layout.html" %}
-{% block title %}Home{% endblock %}
+{% block title %}Announcements{% endblock %}
 {% block content %}
 <div class="page-header">
-  <h1>Announcements & Events</h1>
+  <div>
+    <h1>Announcements & Events</h1>
+  </div>
+  <div class="page-header-meta">
+    <select id="filterCategory" style="padding:6px 12px;font-size:13px;border-radius:8px;border:1px solid var(--border);background:var(--card-bg);color:var(--text)" onchange="loadAnnouncements()">
+      <option value="">All Categories</option>
+      <option value="General">General</option>
+      <option value="Event">Event</option>
+      <option value="Ordinance">Ordinance</option>
+      <option value="Health">Health</option>
+      <option value="Peace & Order">Peace & Order</option>
+      <option value="Disaster">Disaster</option>
+    </select>
+  </div>
 </div>
 <div id="announcementsContainer" class="announcements-grid"></div>
+<div class="pagination" id="annPagination" style="margin-top:24px"></div>
 {% endblock %}
 {% block scripts %}
 <script>
   function pageReady() { loadAnnouncements(); }
 
-  async function loadAnnouncements() {
-    const data = await api('/api/announcements') || [];
+  async function loadAnnouncements(page) {
+    page = page || 1;
+    const cat = document.getElementById('filterCategory').value;
+    let url = `/api/announcements?page=${page}&per_page=12`;
+    if (cat) url += '&category=' + encodeURIComponent(cat);
+
     const container = document.getElementById('announcementsContainer');
-    if (!data.length) {
-      container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128240;</div><p>No announcements yet</p></div>';
+    container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">Loading...</div>';
+
+    const data = await api(url);
+    if (!data || !data.rows?.length) {
+      container.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">&#128240;</div><p>No announcements yet</p></div>';
+      document.getElementById('annPagination').innerHTML = '';
       return;
     }
-    container.innerHTML = data.map(a => {
+    container.innerHTML = data.rows.map(a => {
       const catClass = (a.category || 'General').toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
-      return `<div class="announcement-card">
-        <span class="ann-category ${catClass}">${a.category}</span>
-        <h3>${a.title}</h3>
-        <p>${a.description}</p>
-        <div class="ann-meta">
-          <span>&#128197; ${formatDate(a.event_date) || 'No date'}</span>
-          <span>&#128339; ${formatDate(a.created_at)}</span>
+      const hasLongDesc = a.description && a.description.length > 200;
+      const plainText = stripHtml(a.description || '');
+      const truncated = plainText.length > 200 ? plainText.substring(0, 200) + '...' : plainText;
+      const imgHtml = a.image_path ? `<img src="${a.image_path}" alt="" class="ann-card-img" loading="lazy">` : '';
+      return `<div class="announcement-card ${a.is_pinned ? 'pinned' : ''}">
+        ${a.is_pinned ? '<div class="ann-pin-badge">📌 Pinned</div>' : ''}
+        ${imgHtml}
+        <div class="ann-card-body">
+          <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
+          <h3>${escapeHtml(a.title)}</h3>
+          <p>${truncated}</p>
+          <div class="ann-meta">
+            <span>&#128197; ${a.event_date || 'No event date'}</span>
+            <span>&#128339; ${timeAgo(a.created_at)}</span>
+          </div>
+          <a href="/resident/announcements/${a.id}" class="ann-read-more">Read More &rarr;</a>
         </div>
       </div>`;
     }).join('');
+    renderPagination('annPagination', data.page, data.total_pages, loadAnnouncements);
+  }
+
+  function stripHtml(html) {
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    return d.textContent || d.innerText || '';
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return '';
+    const now = new Date();
+    const d = new Date(dateStr);
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+    return formatDate(dateStr);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 </script>
 {% endblock %}

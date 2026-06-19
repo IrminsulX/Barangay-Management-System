@@ -278,7 +278,8 @@ async function _loadCsrf() {
 // ── API Helper ──────────────────────────────────────
 async function api(url, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
-  const defaultHeaders = { 'Content-Type': 'application/json' };
+  const isFormData = options.body instanceof FormData;
+  const defaultHeaders = isFormData ? {} : { 'Content-Type': 'application/json' };
   if (method !== 'GET' && method !== 'HEAD') {
     const token = getCsrfToken();
     if (token) defaultHeaders['X-CSRF-Token'] = token;
@@ -287,7 +288,7 @@ async function api(url, options = {}) {
     headers: { ...defaultHeaders, ...options.headers },
     ...options
   };
-  if (config.body && typeof config.body === 'object') {
+  if (config.body && typeof config.body === 'object' && !isFormData) {
     config.body = JSON.stringify(config.body);
   }
   const res = await fetch(url, config);

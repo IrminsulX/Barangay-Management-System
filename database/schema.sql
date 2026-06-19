@@ -72,6 +72,11 @@ CREATE TABLE IF NOT EXISTS announcements (
     event_date DATE,
     created_by INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP,
+    published_at TIMESTAMP,
+    image_path TEXT,
+    is_active INTEGER DEFAULT 1,
+    is_pinned INTEGER DEFAULT 0,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
 

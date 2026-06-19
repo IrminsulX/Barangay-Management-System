@@ -5,6 +5,7 @@ Complete REST API backend with SQLite database.
 import os
 import re
 import time
+import random
 import sqlite3
 import secrets
 from datetime import datetime
@@ -232,6 +233,12 @@ def resident_home():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     return render_template('resident/home.html', active_page='home')
+
+@app.route('/resident/announcements/<int:aid>')
+def resident_announcement_detail(aid):
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    return render_template('resident/announcement_detail.html', active_page='home')
 
 @app.route('/resident/requests')
 def resident_requests():
@@ -581,7 +588,7 @@ def api_resident_dashboard_stats():
     recent_requests = query("SELECT id, document_type, status, date_requested as created_at FROM document_requests WHERE resident_id = ? ORDER BY date_requested DESC LIMIT 5", [rid])
     recent_complaints = query("SELECT id, incident_details, respondent_name, status, date_filed as created_at FROM blotter WHERE complainant_id = ? ORDER BY date_filed DESC LIMIT 5", [rid])
 
-    announcements = query("SELECT * FROM announcements ORDER BY created_at DESC LIMIT 3")
+    announcements = query("SELECT * FROM announcements WHERE (is_active = 1 OR is_active IS NULL) AND (published_at IS NULL OR published_at <= datetime('now')) ORDER BY is_pinned DESC, created_at DESC LIMIT 3")
 
     schedules = query("""
         SELECT s.*, r.full_name as official_name
@@ -970,39 +977,136 @@ def api_update_blotter(bid):
 
 # ── Announcements API ─────────────────────────────────────────────
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/api/announcements', methods=['GET', 'POST'])
 @login_required
 @csrf_required
 def api_announcements():
     if request.method == 'GET':
-        rows = query("SELECT * FROM announcements ORDER BY created_at DESC")
-        return jsonify([dict_row(r) for r in rows])
+        category = request.args.get('category', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        active_only = request.args.get('active', '1')
+        search = request.args.get('search', '')
 
+        where = []
+        params = []
+        if category:
+            where.append("category = ?")
+            params.append(category)
+        if active_only == '1':
+            where.append("(is_active = 1 OR is_active IS NULL)")
+            where.append("(published_at IS NULL OR published_at <= datetime('now'))")
+        if search:
+            where.append("(title LIKE ? OR description LIKE ?)")
+            params.extend([f'%{search}%', f'%{search}%'])
+
+        w = (" WHERE " + " AND ".join(where)) if where else ""
+        count = query(f"SELECT COUNT(*) as c FROM announcements{w}", params, one=True)['c']
+        offset = (page - 1) * per_page
+        rows = query(f"SELECT * FROM announcements{w} ORDER BY is_pinned DESC, created_at DESC LIMIT ? OFFSET ?", params + [per_page, offset])
+        return jsonify({
+            'rows': [dict_row(r) for r in rows],
+            'total': count,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': max(1, (count + per_page - 1) // per_page)
+        })
+
+    # POST — create
     if session.get('role') not in ADMIN_ROLES:
         return jsonify({'error': 'Forbidden'}), 403
-    data = request.get_json()
+
+    title = request.form.get('title') or (request.get_json() or {}).get('title')
+    description = request.form.get('description') or (request.get_json() or {}).get('description')
+    category = request.form.get('category') or (request.get_json() or {}).get('category', 'General')
+    event_date = request.form.get('event_date') or (request.get_json() or {}).get('event_date')
+    published_at = request.form.get('published_at') or (request.get_json() or {}).get('published_at')
+    is_pinned = request.form.get('is_pinned', type=int) or (request.get_json() or {}).get('is_pinned', 0)
+
+    if not title or not description:
+        return jsonify({'error': 'Title and description are required'}), 400
+
+    image_path = None
+    if 'image' in request.files:
+        f = request.files['image']
+        if f and f.filename and allowed_file(f.filename):
+            ext = f.filename.rsplit('.', 1)[1].lower()
+            filename = f"ann_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
+            upload_dir = os.path.join('static', 'uploads', 'announcements')
+            os.makedirs(upload_dir, exist_ok=True)
+            f.save(os.path.join(upload_dir, filename))
+            image_path = f'/static/uploads/announcements/{filename}'
+
     aid = query(
-        "INSERT INTO announcements (title, description, category, event_date, created_by) VALUES (?, ?, ?, ?, ?)",
-        [data['title'], data['description'], data['category'], data.get('event_date'), session['user_id']]
+        "INSERT INTO announcements (title, description, category, event_date, image_path, published_at, is_pinned, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [title, description, category, event_date, image_path, published_at or None, is_pinned, session['user_id']]
     )
-    log_activity('create', 'announcement', aid, f"Created announcement: {data['title']}")
+    log_activity('create', 'announcement', aid, f"Created announcement: {title}")
+
+    # Notify all users about the new announcement
+    try:
+        users = query("SELECT id FROM users")
+        for u in users:
+            notify(u['id'], 'New Announcement', title, 'info', f'/resident/announcements/{aid}')
+    except Exception:
+        pass
+
     return jsonify({'success': True, 'id': aid}), 201
 
-@app.route('/api/announcements/<int:aid>', methods=['PUT', 'DELETE'])
-@admin_required
+@app.route('/api/announcements/<int:aid>', methods=['GET', 'PUT', 'DELETE'])
+@login_required
 @csrf_required
 def api_announcement(aid):
+    ann = query("SELECT * FROM announcements WHERE id = ?", [aid], one=True)
+    if not ann:
+        return jsonify({'error': 'Announcement not found'}), 404
+
+    if request.method == 'GET':
+        return jsonify(dict_row(ann))
+
     if request.method == 'PUT':
-        data = request.get_json()
+        if session.get('role') not in ADMIN_ROLES:
+            return jsonify({'error': 'Forbidden'}), 403
+
+        title = request.form.get('title') or (request.get_json() or {}).get('title', ann['title'])
+        description = request.form.get('description') or (request.get_json() or {}).get('description', ann['description'])
+        category = request.form.get('category') or (request.get_json() or {}).get('category', ann['category'])
+        event_date = request.form.get('event_date') or (request.get_json() or {}).get('event_date', ann['event_date'])
+        published_at = request.form.get('published_at') or (request.get_json() or {}).get('published_at', ann['published_at'])
+        is_active = request.form.get('is_active', type=int)
+        if is_active is None:
+            is_active = (request.get_json() or {}).get('is_active', ann['is_active'])
+        is_pinned = request.form.get('is_pinned', type=int)
+        if is_pinned is None:
+            is_pinned = (request.get_json() or {}).get('is_pinned', ann['is_pinned'])
+
+        image_path = ann['image_path']
+        if 'image' in request.files:
+            f = request.files['image']
+            if f and f.filename and allowed_file(f.filename):
+                ext = f.filename.rsplit('.', 1)[1].lower()
+                filename = f"ann_{int(time.time())}_{random.randint(1000,9999)}.{ext}"
+                upload_dir = os.path.join('static', 'uploads', 'announcements')
+                os.makedirs(upload_dir, exist_ok=True)
+                f.save(os.path.join(upload_dir, filename))
+                image_path = f'/static/uploads/announcements/{filename}'
+
         query(
-            "UPDATE announcements SET title=?, description=?, category=?, event_date=? WHERE id=?",
-            [data['title'], data['description'], data['category'], data.get('event_date'), aid]
+            "UPDATE announcements SET title=?, description=?, category=?, event_date=?, image_path=?, published_at=?, is_active=?, is_pinned=?, updated_at=datetime('now') WHERE id=?",
+            [title, description, category, event_date, image_path, published_at, is_active, is_pinned, aid]
         )
-        log_activity('update', 'announcement', aid, f"Updated announcement: {data['title']}")
+        log_activity('update', 'announcement', aid, f"Updated announcement: {title}")
         return jsonify({'success': True})
 
-    former = query("SELECT title FROM announcements WHERE id = ?", [aid], one=True)
-    title = former['title'] if former else f'ID {aid}'
+    # DELETE
+    if session.get('role') not in ADMIN_ROLES:
+        return jsonify({'error': 'Forbidden'}), 403
+    title = ann['title']
     query("DELETE FROM announcements WHERE id = ?", [aid])
     log_activity('delete', 'announcement', aid, f"Deleted announcement: {title}")
     return jsonify({'success': True})
@@ -1440,6 +1544,28 @@ if __name__ == '__main__':
             if 'schedule_date' not in cols:
                 conn.execute("ALTER TABLE schedules ADD COLUMN schedule_date DATE")
                 conn.commit()
+        finally:
+            try: conn.close()
+            except: pass
+
+    # Migration: add new columns to announcements table
+    if os.path.exists(DATABASE):
+        try:
+            conn = sqlite3.connect(DATABASE)
+            conn.execute("PRAGMA foreign_keys = ON")
+            cur = conn.execute("PRAGMA table_info(announcements)")
+            cols = [row[1] for row in cur.fetchall()]
+            if 'is_active' not in cols:
+                conn.execute("ALTER TABLE announcements ADD COLUMN is_active INTEGER DEFAULT 1")
+            if 'is_pinned' not in cols:
+                conn.execute("ALTER TABLE announcements ADD COLUMN is_pinned INTEGER DEFAULT 0")
+            if 'image_path' not in cols:
+                conn.execute("ALTER TABLE announcements ADD COLUMN image_path TEXT")
+            if 'published_at' not in cols:
+                conn.execute("ALTER TABLE announcements ADD COLUMN published_at TIMESTAMP")
+            if 'updated_at' not in cols:
+                conn.execute("ALTER TABLE announcements ADD COLUMN updated_at TIMESTAMP")
+            conn.commit()
         finally:
             try: conn.close()
             except: pass

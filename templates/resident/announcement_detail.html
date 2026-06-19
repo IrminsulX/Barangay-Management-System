@@ -1,0 +1,57 @@
+{% extends "resident/layout.html" %}
+{% block title %}Announcement{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="/resident/home" class="btn btn-sm btn-outline" style="margin-bottom:8px">&larr; Back to Announcements</a>
+    <h1 id="detailTitle"></h1>
+    <div class="breadcrumb" id="detailMeta"></div>
+  </div>
+</div>
+
+<div class="ann-detail-card">
+  <div id="detailImage" class="ann-detail-image" style="display:none"></div>
+  <div class="ann-detail-body">
+    <div id="detailCategory"></div>
+    <div id="detailDescription" class="ann-detail-content"></div>
+    <div id="detailFooter" class="ann-detail-footer"></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  function pageReady() { loadDetail(); }
+
+  async function loadDetail() {
+    const id = window.location.pathname.split('/').pop();
+    const a = await api(`/api/announcements/${id}`);
+    if (!a) { document.querySelector('.page-header h1').textContent = 'Not Found'; return; }
+
+    document.getElementById('detailTitle').textContent = a.title;
+    document.getElementById('detailMeta').innerHTML = `${escapeHtml(a.category)} &middot; ${formatDate(a.created_at)}${a.updated_at ? ' &middot; Updated ' + formatDate(a.updated_at) : ''}`;
+
+    const catClass = (a.category || 'General').toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
+    document.getElementById('detailCategory').innerHTML = `<span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>${a.is_pinned ? ' <span class="ann-pin-badge">📌 Pinned</span>' : ''}`;
+
+    if (a.image_path) {
+      document.getElementById('detailImage').innerHTML = `<img src="${a.image_path}" alt="${escapeHtml(a.title)}">`;
+      document.getElementById('detailImage').style.display = 'block';
+    }
+
+    document.getElementById('detailDescription').innerHTML = a.description || '';
+
+    let footerHtml = '';
+    if (a.event_date) footerHtml += `<div class="ann-detail-info"><strong>Event Date:</strong> ${formatDate(a.event_date)}</div>`;
+    footerHtml += `<div class="ann-detail-info"><strong>Posted:</strong> ${formatDate(a.created_at)}</div>`;
+    if (a.updated_at) footerHtml += `<div class="ann-detail-info"><strong>Last Updated:</strong> ${formatDate(a.updated_at)}</div>`;
+    document.getElementById('detailFooter').innerHTML = footerHtml;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+</script>
+{% endblock %}

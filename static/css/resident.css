@@ -170,6 +170,82 @@
   color: var(--text-muted);
 }
 
+.announcement-card .ann-card-img {
+  width: calc(100% + 44px);
+  margin: -22px -22px 16px;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+.announcement-card.pinned {
+  border-left-color: var(--secondary);
+  background: linear-gradient(135deg, var(--card-bg) 0%, rgba(200,164,78,0.04) 100%);
+}
+
+.ann-pin-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--secondary);
+  margin-bottom: 6px;
+}
+
+.ann-read-more {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-light);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.ann-read-more:hover { opacity: 0.75; text-decoration: underline; }
+
+/* ── Announcement Detail Page ────────────────────── */
+
+.ann-detail-card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  max-width: 800px;
+}
+
+.ann-detail-image img {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+  display: block;
+}
+
+.ann-detail-body { padding: 32px; }
+
+.ann-detail-content {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text);
+  margin: 20px 0;
+}
+.ann-detail-content h1 { font-size: 24px; margin: 20px 0 10px; }
+.ann-detail-content h2 { font-size: 20px; margin: 18px 0 8px; }
+.ann-detail-content h3 { font-size: 17px; margin: 16px 0 6px; }
+.ann-detail-content p { margin: 10px 0; }
+.ann-detail-content ul, .ann-detail-content ol { margin: 10px 0 10px 20px; }
+.ann-detail-content li { margin: 4px 0; }
+.ann-detail-content a { color: var(--primary-light); text-decoration: underline; }
+.ann-detail-content img { max-width: 100%; border-radius: 8px; margin: 10px 0; }
+
+.ann-detail-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ann-detail-info { margin: 4px 0; }
+
 /* ── Profile Page ────────────────────────────────── */
 .profile-layout {
   display: grid;
