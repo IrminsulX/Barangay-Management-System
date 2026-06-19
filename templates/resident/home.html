@@ -41,9 +41,6 @@
     }
     container.innerHTML = data.rows.map(a => {
       const catClass = (a.category || 'General').toLowerCase().replace(/ & /g, '-').replace(/\s+/g, '-');
-      const hasLongDesc = a.description && a.description.length > 200;
-      const plainText = stripHtml(a.description || '');
-      const truncated = plainText.length > 200 ? plainText.substring(0, 200) + '...' : plainText;
       const imgHtml = a.image_path ? `<img src="${a.image_path}" alt="" class="ann-card-img" loading="lazy">` : '';
       return `<div class="announcement-card ${a.is_pinned ? 'pinned' : ''}">
         ${a.is_pinned ? '<div class="ann-pin-badge">📌 Pinned</div>' : ''}
@@ -51,7 +48,7 @@
         <div class="ann-card-body">
           <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
           <h3>${escapeHtml(a.title)}</h3>
-          <div class="ann-desc">${truncated}</div>
+          <div class="ann-desc">${a.description || ''}</div>
           <div class="ann-meta">
             <span>&#128197; ${a.event_date || 'No event date'}</span>
             <span>&#128339; ${timeAgo(a.created_at)}</span>
@@ -61,16 +58,6 @@
       </div>`;
     }).join('');
     renderPagination('annPagination', data.page, data.total_pages, loadAnnouncements);
-  }
-
-  function stripHtml(html) {
-    const d = document.createElement('div');
-    d.innerHTML = html;
-    // Replace block-level closing tags with newline to preserve list/item breaks
-    d.innerHTML = d.innerHTML
-      .replace(/<\/(li|p|div|h[1-6]|blockquote|tr)>/gi, '\n')
-      .replace(/<br\s*\/?>/gi, '\n');
-    return d.textContent || d.innerText || '';
   }
 
   function timeAgo(dateStr) {
