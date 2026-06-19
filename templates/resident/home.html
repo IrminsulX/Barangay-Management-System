@@ -51,7 +51,7 @@
         <div class="ann-card-body">
           <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
           <h3>${escapeHtml(a.title)}</h3>
-          <p>${truncated}</p>
+          <div class="ann-desc">${truncated}</div>
           <div class="ann-meta">
             <span>&#128197; ${a.event_date || 'No event date'}</span>
             <span>&#128339; ${timeAgo(a.created_at)}</span>
