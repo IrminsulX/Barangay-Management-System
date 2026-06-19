@@ -140,15 +140,17 @@
       b4.innerHTML = data.announcements.map(a => {
         const catClass = (a.category || 'General').toLowerCase().replace(/ & /g,'-').replace(/\s+/g,'-');
         return `
-        <div class="dash-announcement">
-          <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
-          <h4 class="dash-ann-title">${escapeHtml(a.title)}</h4>
-          <div class="dash-ann-desc">${a.description || ''}</div>
-          <div class="dash-ann-footer">
-            <span class="dash-ann-date">${timeAgo(a.created_at)}</span>
-            <a href="/resident/announcements/${a.id}" class="dash-ann-read-more">Read More &rarr;</a>
+        <a href="/resident/announcements/${a.id}" class="dash-ann-item">
+          <div class="dash-ann-dot ${catClass}"></div>
+          <div class="dash-ann-body">
+            <div class="dash-ann-head">
+              <span class="dash-ann-cat">${escapeHtml(a.category)}</span>
+              <span class="dash-ann-time">${timeAgo(a.created_at)}</span>
+            </div>
+            <h4 class="dash-ann-title">${escapeHtml(a.title)}</h4>
+            <div class="dash-ann-desc">${a.description || ''}</div>
           </div>
-        </div>`;
+        </a>`;
       }).join('');
     } else {
       b4.innerHTML = '<div class="dash-empty"><p>No announcements</p></div>';
