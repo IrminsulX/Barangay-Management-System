@@ -139,11 +139,13 @@
     if (data.announcements?.length) {
       b4.innerHTML = data.announcements.map(a => {
         const catClass = (a.category || 'General').toLowerCase().replace(/ & /g,'-').replace(/\s+/g,'-');
+        const plainText = stripHtml(a.description || '');
+        const truncated = plainText.length > 120 ? plainText.substring(0, 120) + '...' : plainText;
         return `
         <div class="dash-announcement">
           <span class="ann-category ${catClass}">${escapeHtml(a.category)}</span>
           <h4 class="dash-ann-title">${escapeHtml(a.title)}</h4>
-          <p class="dash-ann-desc">${escapeHtml(a.description)}</p>
+          <p class="dash-ann-desc">${escapeHtml(truncated)}</p>
           <div class="dash-ann-date">${timeAgo(a.created_at)}</div>
         </div>`;
       }).join('');
@@ -194,6 +196,14 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function stripHtml(html) {
+    if (!html) return '';
+    const d = document.createElement('div');
+    d.innerHTML = html;
+    d.innerHTML = d.innerHTML.replace(/<\/(li|p|div|h[1-6]|blockquote|tr)>/gi, '\n').replace(/<br\s*\/?>/gi, '\n');
+    return d.textContent || d.innerText || '';
   }
 </script>
 {% endblock %}
