@@ -606,12 +606,29 @@
 /* Announcements in dashboard */
 
 .dash-announcement {
-  padding: 18px 24px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border);
   transition: background 0.15s ease;
+  cursor: pointer;
 }
 .dash-announcement:last-child { border-bottom: none; }
 .dash-announcement:hover { background: var(--bg); }
+
+.dash-announcement .ann-category {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dash-announcement .ann-category.general { background: #e3f2fd; color: #1565c0; }
+.dash-announcement .ann-category.event { background: #fff3e0; color: #e65100; }
+.dash-announcement .ann-category.ordinance { background: #f3e5f5; color: #6a1b9a; }
+.dash-announcement .ann-category.health { background: #e8f5e9; color: #2e7d32; }
+.dash-announcement .ann-category.peace-order { background: #ffebee; color: #c62828; }
+.dash-announcement .ann-category.disaster { background: #fff8e1; color: #f57f17; }
 
 .dash-ann-title {
   font-size: 14px;
@@ -623,7 +640,7 @@
 .dash-ann-desc {
   font-size: 13px;
   color: var(--muted);
-  margin: 0 0 6px;
+  margin: 0;
   line-height: 1.4;
   max-height: 4.2em;
   overflow: hidden;
@@ -651,8 +668,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 
