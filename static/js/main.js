@@ -286,7 +286,9 @@ async function api(url, options = {}) {
     if (token) headers['X-CSRF-Token'] = token;
   }
   const config = { method, headers };
-  if (options.body) config.body = options.body;
+  if (options.body) {
+    config.body = isFormData ? options.body : JSON.stringify(options.body);
+  }
   if (options.signal) config.signal = options.signal;
   // pass through any other relevant options
   const res = await fetch(url, config);

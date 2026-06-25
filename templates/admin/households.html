@@ -228,7 +228,8 @@
       return;
     }
     if (id) {
-      const headResidentId = (await api(`/api/households/${id}`, { method: 'GET' }))?.head_resident_id;
+      const household = await api(`/api/households/${id}`, { method: 'GET' });
+      const headResidentId = household?.head_resident_id;
       if (headResidentId) {
         await api(`/api/residents/${headResidentId}`, {
           method: 'PUT',
@@ -239,13 +240,14 @@
             civil_status: document.getElementById('hHeadCivilStatus').value,
             contact_number: document.getElementById('hHeadContact').value,
             email: document.getElementById('hHeadEmail').value,
-            voter_status: document.getElementById('hHeadVoter').checked ? 1 : 0
+            voter_status: document.getElementById('hHeadVoter').checked ? 1 : 0,
+            household_id: id
           }
         });
       }
       await api(`/api/households/${id}`, {
         method: 'PUT',
-        body: { household_code: code, address }
+        body: { household_code: code, address, head_resident_id: headResidentId }
       });
       showToast('Household updated');
     } else {

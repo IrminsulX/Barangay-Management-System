@@ -410,11 +410,20 @@ def api_resident(rid):
 
     if request.method == 'PUT':
         data = request.get_json()
-        query(
-            "UPDATE residents SET full_name=?, birthdate=?, sex=?, civil_status=?, contact_number=?, email=?, household_id=?, voter_status=? WHERE id=?",
-            [data['full_name'], data['birthdate'], data['sex'], data['civil_status'],
-             data.get('contact_number', ''), data.get('email', ''), data.get('household_id'), int(data.get('voter_status', 0)), rid]
-        )
+        fields = {
+            'full_name': data['full_name'],
+            'birthdate': data['birthdate'],
+            'sex': data['sex'],
+            'civil_status': data['civil_status'],
+            'contact_number': data.get('contact_number', ''),
+            'email': data.get('email', ''),
+            'voter_status': int(data.get('voter_status', 0)),
+        }
+        if 'household_id' in data:
+            fields['household_id'] = data['household_id']
+        set_clause = ', '.join(f"{k}=?" for k in fields)
+        values = list(fields.values()) + [rid]
+        query(f"UPDATE residents SET {set_clause} WHERE id=?", values)
         log_activity('update', 'resident', rid, f"Updated resident {data['full_name']}")
         return jsonify({'success': True})
 
